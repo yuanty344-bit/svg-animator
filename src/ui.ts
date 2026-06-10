@@ -33,9 +33,6 @@ export function renderLayerPathList(): void {
     colorInput.style.cssText = 'width:18px;height:18px;border:none;background:transparent;cursor:pointer;padding:0;flex-shrink:0';
     colorInput.addEventListener('input', function () {
       state.originalFills[i] = colorInput.value;
-      state.preserveOriginalColors = true;
-      const preserveCheckbox = document.getElementById('preserveColors') as HTMLInputElement;
-      preserveCheckbox.checked = true;
       updateElements(state.currentProgress);
     });
     div.appendChild(colorInput);

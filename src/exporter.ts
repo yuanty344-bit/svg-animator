@@ -62,7 +62,8 @@ export function exportHTML(): void {
       .map(([k, v]) => `${k}="${escHtml(v)}"`)
       .join(' ');
     const delay = stagger * i;
-    strokes += `\n    <${el.tag} ${a} class="ap" style="--l:${len}px;--d:${delay.toFixed(2)}s;--s:${state.sequentialMode ? perElemStroke.toFixed(2) : CONST.STROKE_DUR}s"/>`;
+    const strokeSec = (state.sequentialMode ? perElemStroke : CONST.STROKE_DUR).toFixed(2);
+    strokes += `\n    <${el.tag} ${a} class="ap" style="--l:${len}px;--d:${delay.toFixed(2)}s;--s:${strokeSec}"/>`;
     const origFill = state.originalFills[i];
     const ft =
       state.preserveOriginalColors && origFill
@@ -70,7 +71,7 @@ export function exportHTML(): void {
         : state.preserveOriginalColors
           ? 'transparent'
           : state.fillColor;
-    fills += `\n    <${el.tag} ${a} class="fill-el" style="--fc:${escHtml(ft)};--d:${delay.toFixed(2)}s;--s:${state.sequentialMode ? perElemStroke.toFixed(2) : CONST.STROKE_DUR}s"/>`;
+    fills += `\n    <${el.tag} ${a} class="fill-el" style="--fc:${escHtml(ft)};--d:${delay.toFixed(2)}s;--s:${strokeSec}"/>`;
   });
 
   const fillCss = state.preserveOriginalColors ? 'fill:var(--fc)' : `fill:${escHtml(state.fillColor)}`;

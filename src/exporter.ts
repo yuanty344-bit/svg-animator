@@ -74,7 +74,7 @@ export function exportHTML(): void {
     fills += `\n    <${el.tag} ${a} class="fill-el" style="--fc:${escHtml(ft)};--d:${delay.toFixed(2)}s;--s:${strokeSec}"/>`;
   });
 
-  const fillCss = state.preserveOriginalColors ? 'fill:var(--fc)' : `fill:${escHtml(state.fillColor)}`;
+  const fillVal = state.preserveOriginalColors ? 'var(--fc)' : escHtml(state.fillColor);
   const strokeDur = state.sequentialMode ? 'var(--s)' : String(CONST.STROKE_DUR);
   const keepStrokes = state.keepStrokes;
 
@@ -92,16 +92,16 @@ export function exportHTML(): void {
     `.ap{fill:transparent;stroke:${escHtml(state.strokeColor)};stroke-width:${state.strokeWidth};` +
     `stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:var(--l);stroke-dashoffset:var(--l);` +
     `${apAnim};animation-delay:var(--d)}\n` +
-    `.fill-el{fill:transparent;stroke:none;animation:fadeIn ${CONST.FILL_DUR}s linear forwards ${strokeDur}s;animation-delay:var(--d)}\n` +
+    `.fill-el{opacity:0;fill:${fillVal};stroke:none;animation:fadeIn ${CONST.FILL_DUR}s linear forwards ${strokeDur}s;animation-delay:var(--d)}\n` +
     `@keyframes d{to{stroke-dashoffset:0}}\n` +
     `${fadeOutCss}` +
-    `@keyframes fadeIn{to{${fillCss}}}\n</style></head><body>` +
+    `@keyframes fadeIn{to{opacity:1}}\n</style></head><body>` +
     `<svg viewBox="${viewBox}">${strokes}${fills}</svg>\n<script>\n` +
     `(function(){var s=document.querySelectorAll(".ap"),f=document.querySelectorAll(".fill-el");` +
     `function reset(){` +
     `s.forEach(function(p){var d=p.style.getPropertyValue("--s")||"${CONST.STROKE_DUR}";p.style.animation="none";` +
     `p.style.strokeDashoffset=p.style.getPropertyValue("--l");p.style.strokeOpacity=1;});` +
-    `f.forEach(function(p){p.style.animation="none";p.style.fill="transparent";});` +
+    `f.forEach(function(p){p.style.animation="none";p.style.opacity=0;});` +
     `void document.querySelector("svg").offsetWidth;` +
     `s.forEach(function(p){var d=p.style.getPropertyValue("--s")||"${CONST.STROKE_DUR}";` +
     (keepStrokes

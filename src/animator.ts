@@ -76,11 +76,11 @@ export function updateElements(progress: number): void {
       else rawFill = 1;
       const fillOpacity = applyEasing(rawFill, state.easing);
 
-      const origFill = state.originalFills[i];
-      if (origFill) {
-        const rgb = hexToRgb(origFill);
+      const effectiveFill = state.customFills[i] || state.originalFills[i];
+      if (effectiveFill) {
+        const rgb = hexToRgb(effectiveFill);
         if (rgb) el.style.fill = `rgba(${rgb.r},${rgb.g},${rgb.b},${fillOpacity})`;
-        else { el.style.fill = origFill; el.style.opacity = String(fillOpacity); }
+        else { el.style.fill = effectiveFill; el.style.opacity = String(fillOpacity); }
       } else {
         el.style.fill = 'transparent'; el.style.opacity = '1';
       }

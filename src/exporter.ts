@@ -84,6 +84,8 @@ export function exportHTML(): void {
   const fadeOutCss = keepStrokes ? '' : `@keyframes fadeOut{to{stroke-opacity:0}}`;
   const apAnimName = keepStrokes ? 'd' : 'd,fadeOut';
   const apAnimDur = keepStrokes ? 'var(--s)s' : `var(--s)s,${fd}s`;
+  // fadeOut 需要独立延迟 = stagger + stroke时长，不能和 d 共用同一个 delay
+  const apAnimDelay = keepStrokes ? 'var(--d)' : `var(--d),calc(var(--d) + var(--s)*1s)`;
 
   const html =
     `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>SVG Animation</title>\n` +
@@ -93,7 +95,7 @@ export function exportHTML(): void {
     `.ap{fill:transparent;stroke:${escHtml(state.strokeColor)};stroke-width:${state.strokeWidth};` +
     `stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:var(--l);stroke-dashoffset:var(--l);` +
     `animation-name:${apAnimName};animation-duration:${apAnimDur};animation-timing-function:linear;` +
-    `animation-fill-mode:forwards;animation-delay:var(--d)}\n` +
+    `animation-fill-mode:forwards;animation-delay:${apAnimDelay}}\n` +
     `.fill-el{opacity:0;fill:${fillVal};stroke:none;` +
     `animation-name:fadeIn;animation-duration:${fd}s;animation-timing-function:linear;` +
     `animation-fill-mode:forwards;animation-delay:calc(var(--d) + ${strokeDur}s)}\n` +
@@ -114,7 +116,7 @@ export function exportHTML(): void {
     `p.style.animationTimingFunction="linear";` +
     `p.style.animationFillMode="forwards";` +
     (keepStrokes ? ``
-      : `p.style.animationName="d,fadeOut";p.style.animationDuration=(p.style.getPropertyValue(\"--s\")||\"6\")+\"s,${fd}s\";p.style.animationDelay=d;`) +
+      : `p.style.animationName="d,fadeOut";p.style.animationDuration=(p.style.getPropertyValue(\"--s\")||\"6\")+\"s,${fd}s\";p.style.animationDelay=d+\",calc(\"+d+\" + \"+(p.style.getPropertyValue(\"--s\")||\"6\")+\"*1s)\";`) +
     `});` +
     `f.forEach(function(p){p.style.animationName="fadeIn";` +
     `p.style.animationDuration="${fd}s";` +

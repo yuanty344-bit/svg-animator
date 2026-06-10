@@ -1,34 +1,25 @@
 // ── SVG 解析 ────────────────────────────────────────────
 
+import type { SVGElementData, ParsedSVG } from './types.js';
 import { normalizeViewBox, parseColor } from './utils.js';
 
 const SKIP_ATTRS = new Set([
-  'stroke',
-  'stroke-width',
-  'style',
-  'class',
-  'id',
-  'stroke-linecap',
-  'stroke-linejoin',
-  'stroke-opacity',
+  'stroke', 'stroke-width', 'style', 'class', 'id',
+  'stroke-linecap', 'stroke-linejoin', 'stroke-opacity',
 ]);
 
 const GEOM_TAGS = new Set([
   'path', 'circle', 'rect', 'ellipse', 'line', 'polygon', 'polyline',
 ]);
 
-/**
- * 提取元素属性 + 原始填充色
- * - fill="none" / fill="transparent" → null（显式透明）
- * - fill="" 或无 fill 属性 → #000000（SVG 默认黑色）
- * - fill="#xxx" → 规范化颜色
- */
-export function extractAttrsAndFill(element) {
-  const attrs = {};
-  let fill = null;
+export function extractAttrsAndFill(
+  element: Element
+): { attrs: Record<string, string>; fill: string | null } {
+  const attrs: Record<string, string> = {};
+  let fill: string | null = null;
   let hasExplicitFill = false;
 
-  for (const attr of element.attributes) {
+  for (const attr of (element as Element).attributes) {
     if (attr.name === 'fill') {
       const raw = (attr.value || '').trim().toLowerCase();
       if (raw === 'none' || raw === 'transparent') {
@@ -38,13 +29,11 @@ export function extractAttrsAndFill(element) {
         fill = parseColor(attr.value);
         hasExplicitFill = true;
       }
-      // raw === '' → 走 SVG 默认黑色
     } else if (!SKIP_ATTRS.has(attr.name)) {
       attrs[attr.name] = attr.value;
     }
   }
 
-  // 检查 style 属性中的 fill
   if (!hasExplicitFill) {
     const style = element.getAttribute('style') || '';
     const m = style.match(/(?:^|;)\s*fill\s*:\s*([^;]+)/);
@@ -60,7 +49,6 @@ export function extractAttrsAndFill(element) {
     }
   }
 
-  // SVG 默认：无显式 fill → 黑色
   if (fill === null && !hasExplicitFill) {
     fill = '#000000';
   }
@@ -68,8 +56,7 @@ export function extractAttrsAndFill(element) {
   return { attrs, fill };
 }
 
-/** 解析 SVG 文本 → { viewBox, elements, originalElements } */
-export function parseSVG(text) {
+export function parseSVG(text: string): ParsedSVG | null {
   try {
     const parser = new DOMParser();
     const doc = parser.parseFromString(text, 'image/svg+xml');
@@ -79,9 +66,9 @@ export function parseSVG(text) {
     const viewBox = normalizeViewBox(
       svg.getAttribute('viewBox') || '0 0 1024 1024'
     );
-    const elements = [];
+    const elements: SVGElementData[] = [];
 
-    function walk(node) {
+    function walk(node: Element) {
       for (const child of node.children) {
         if (GEOM_TAGS.has(child.tagName.toLowerCase())) {
           const { attrs, fill } = extractAttrsAndFill(child);

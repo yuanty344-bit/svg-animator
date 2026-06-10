@@ -1,6 +1,8 @@
-// ── 全局状态（单一数据源，所有模块共享） ────────────────
+// ── 全局状态 ──────────────────────────────────────────
 
-export const state = {
+import type { AppState, Constants } from './types.js';
+
+export const state: AppState = {
   currentData: null,
   strokeElements: [],
   fillElements: [],
@@ -16,6 +18,8 @@ export const state = {
   fillColor: '#ffffff',
   syncColors: true,
   preserveOriginalColors: false,
+  sequentialMode: false,
+  staggerDelay: 0.15,
   strokeWidth: 8,
   bgColor: '#000000',
   autoBgEnabled: true,
@@ -26,9 +30,7 @@ export const state = {
   keyboardResumeTimer: null,
 };
 
-// ── 常量 ────────────────────────────────────────────────
-
-export const CONST = {
+export const CONST: Constants = {
   STROKE_DUR: 6,
   FILL_DUR: 1.2,
   PAUSE_TIME: 1.3,
@@ -37,6 +39,12 @@ export const CONST = {
   DEFAULT_VIEWBOX: '0 0 1024 1024',
 };
 
-export function totalCycle() {
+export function totalCycle(): number {
   return CONST.STROKE_DUR + CONST.FILL_DUR + CONST.PAUSE_TIME;
+}
+
+/** 单元素动画时长（用于逐条绘制模式） */
+export function elementCycle(elemCount: number): number {
+  const base = CONST.STROKE_DUR + CONST.FILL_DUR;
+  return base + (elemCount - 1) * state.staggerDelay + CONST.PAUSE_TIME;
 }

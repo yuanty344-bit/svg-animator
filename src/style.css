@@ -35,11 +35,12 @@ body{
 /* 共用控件 */
 .ctrl-group{display:flex;align-items:center;gap:6px;font-size:12px;opacity:.8}
 .ctrl-group label{opacity:.6;white-space:nowrap;font-size:11px}
-.ctrl-group input[type=range]{
-  width:100px;height:3px;background:rgba(255,255,255,.15);
+input[type=range]{
+  accent-color:#fff;
+  height:3px;background:rgba(255,255,255,.15);
   border-radius:2px;-webkit-appearance:none;appearance:none;outline:none;
 }
-.ctrl-group input[type=range]::-webkit-slider-thumb{
+input[type=range]::-webkit-slider-thumb{
   appearance:none;width:14px;height:14px;background:#fff;border-radius:50%;cursor:pointer;
 }
 .ctrl-group .val{min-width:30px;text-align:center;opacity:.7;font-size:11px}

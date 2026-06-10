@@ -93,7 +93,7 @@ export function updateElements(progress: number): void {
         fillOpacity = (localTime - perElemStroke) / CONST.FILL_DUR;
       else fillOpacity = 1;
 
-      const fillRgb = getFillRgb();
+      const fillRgb = getFillRgb()!;
       el.style.fill = `rgba(${fillRgb.r},${fillRgb.g},${fillRgb.b},${fillOpacity})`;
       el.style.opacity = '1';
     });

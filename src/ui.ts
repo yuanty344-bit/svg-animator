@@ -67,7 +67,17 @@ function fullRebuild(): void {
   updateColors();
   state.playDesired = true;
   state.paused = false;
+  syncPlayIcon();
   resetAnimation();
+}
+
+// ── 图标同步 ────────────────────────────────────────────
+
+function syncPlayIcon(): void {
+  const icon = document.getElementById('playIcon')!;
+  icon.innerHTML = state.paused
+    ? '<polygon points="6,4 20,12 6,20" fill="currentColor"/>'
+    : '<rect x="5" y="4" width="5" height="16" rx="1"/><rect x="14" y="4" width="5" height="16" rx="1"/>';
 }
 
 // ── 键盘恢复 ────────────────────────────────────────────
@@ -83,8 +93,7 @@ function scheduleKeyboardResume(): void {
       state.animStart =
         performance.now() - (state.currentProgress * cd) / state.speedFactor * 1000;
       state.lastTickTime = 0;
-      document.getElementById('playIcon')!.innerHTML =
-        '<rect x="5" y="4" width="5" height="16" rx="1"/><rect x="14" y="4" width="5" height="16" rx="1"/>';
+      syncPlayIcon();
       tick();
     }
   }, CONST.KEYBOARD_RESUME_DELAY);
@@ -202,20 +211,19 @@ export function initUI(): void {
   $('playPauseBtn').addEventListener('click', () => {
     if (state.keyboardResumeTimer) { clearTimeout(state.keyboardResumeTimer); state.keyboardResumeTimer = null; }
     state.playDesired = !state.playDesired;
-    const playIcon = $('playIcon');
     if (state.playDesired) {
       state.paused = false;
       const n = state.strokeElements.length;
       const cd = state.sequentialMode ? elementCycle(n) : totalCycle();
       state.animStart = performance.now() - (state.currentProgress * cd) / state.speedFactor * 1000;
       state.lastTickTime = 0;
-      playIcon.innerHTML = '<rect x="5" y="4" width="5" height="16" rx="1"/><rect x="14" y="4" width="5" height="16" rx="1"/>';
+      syncPlayIcon();
       tick();
     } else {
       state.paused = true;
       if (state.rafId) cancelAnimationFrame(state.rafId);
       state.rafId = null;
-      playIcon.innerHTML = '<polygon points="6,4 20,12 6,20" fill="currentColor"/>';
+      syncPlayIcon();
     }
   });
 
@@ -306,7 +314,7 @@ export function initUI(): void {
       if (!state.paused) {
         state.paused = true;
         if (state.rafId) { cancelAnimationFrame(state.rafId); state.rafId = null; }
-        $('playIcon').innerHTML = '<polygon points="6,4 20,12 6,20" fill="currentColor"/>';
+        syncPlayIcon();
         scheduleKeyboardResume();
       }
       const step = e.shiftKey ? 5 : 1;

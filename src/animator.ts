@@ -55,9 +55,11 @@ export function updateElements(progress: number): void {
     const hasOwnFill = state.preserveOriginalColors
       ? state.originalFills[i] !== null
       : state.originalFills.some((f) => f !== null);
+    const finalStrokeOp = state.keepStrokes
+      ? 1
+      : hasOwnFill ? strokeOpacity : 1;
     el.style.strokeOpacity = String(
-      state.pathStrokeVisible[i] && hasOwnFill ? strokeOpacity
-        : state.pathStrokeVisible[i] ? 1 : 0
+      state.pathStrokeVisible[i] ? finalStrokeOp : 0
     );
   });
 

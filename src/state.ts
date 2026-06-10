@@ -19,7 +19,8 @@ export const state: AppState = {
   syncColors: true,
   preserveOriginalColors: false,
   sequentialMode: false,
-  staggerFactor: 1.0,  // 逐条间隔系数：1=无重叠，0.5=半重叠，2=加停顿
+  staggerFactor: 1.0,
+  keepStrokes: true,
   strokeWidth: 8,
   bgColor: '#000000',
   autoBgEnabled: true,

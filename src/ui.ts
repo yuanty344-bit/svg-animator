@@ -201,6 +201,11 @@ export function initUI(): void {
     if (state.currentData) fullRebuild();
     showToast(state.sequentialMode ? '逐条绘制：开' : '同步绘制：开');
   });
+  const keepStrokesCheckbox = $('keepStrokes') as HTMLInputElement;
+  keepStrokesCheckbox.addEventListener('change', () => {
+    state.keepStrokes = keepStrokesCheckbox.checked;
+    updateElements(state.currentProgress);
+  });
   const staggerSlider = $('staggerFactor') as HTMLInputElement;
   const staggerVal = $('staggerVal');
   staggerSlider.addEventListener('input', () => {
@@ -256,6 +261,7 @@ export function initUI(): void {
     state.preserveOriginalColors = false; preserveColorsCheckbox.checked = false;
     state.sequentialMode = false; sequentialCheckbox.checked = false;
     state.staggerFactor = 1; staggerSlider.value = '1'; staggerVal.textContent = '1×';
+    state.keepStrokes = true; keepStrokesCheckbox.checked = true;
     fullRebuild();
     fileInput.value = '';
     if (state.keyboardResumeTimer) { clearTimeout(state.keyboardResumeTimer); state.keyboardResumeTimer = null; }

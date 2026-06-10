@@ -120,7 +120,7 @@ export function exportHTML(): void {
     `});` +
     `f.forEach(function(p){p.style.animationName="fadeIn";` +
     `p.style.animationDuration="${fd}s";` +
-    `p.style.animationDelay=p.style.getPropertyValue(\"--d\")||\"0s\";` +
+    `p.style.animationDelay="calc("+(p.style.getPropertyValue(\"--d\")||\"0s\")+\" + \"+(p.style.getPropertyValue(\"--s\")||\"6\")+\"s)\";` +
     `p.style.animationTimingFunction="linear";` +
     `p.style.animationFillMode="forwards";});}` +
     `reset();setInterval(reset,${cycleMs});})();\n<\/script></body></html>`;

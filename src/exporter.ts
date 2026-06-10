@@ -75,7 +75,8 @@ export function exportHTML(): void {
     pairs += `\n    <${el.tag} ${a} class="fill-el" style="--fc:${escHtml(ft)};--d:${delay.toFixed(2)}s;--s:${strokeSec}"/>`;
   });
 
-  const fillVal = state.preserveOriginalColors ? 'var(--fc)' : escHtml(state.fillColor);
+  const hasCustomFills = state.customFills.some((f) => f !== null);
+  const fillVal = (state.preserveOriginalColors || hasCustomFills) ? 'var(--fc)' : escHtml(state.fillColor);
   const strokeDur = state.sequentialMode ? 'var(--s)' : String(CONST.STROKE_DUR);
   const keepStrokes = state.keepStrokes;
 

@@ -94,24 +94,35 @@ export function exportHTML(): void {
     `svg{width:min(80vw,80vh,480px);height:min(80vw,80vh,480px)}\n` +
     `.ap{fill:transparent;stroke:${escHtml(state.strokeColor)};stroke-width:${state.strokeWidth};` +
     `stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:var(--l);stroke-dashoffset:var(--l);` +
-    `${apAnim};animation-delay:var(--d)}\n` +
-    `.fill-el{opacity:0;fill:${fillVal};stroke:none;animation:fadeIn ${fd}s linear forwards ${strokeDur}s;animation-delay:var(--d)}\n` +
+    `animation-name:d;animation-duration:var(--s)s;animation-timing-function:linear;` +
+    `animation-fill-mode:forwards;animation-delay:var(--d)}\n` +
+    `.fill-el{opacity:0;fill:${fillVal};stroke:none;` +
+    `animation-name:fadeIn;animation-duration:${fd}s;animation-timing-function:linear;` +
+    `animation-fill-mode:forwards;animation-delay:calc(var(--d) + ${strokeDur}s)}\n` +
     `@keyframes d{to{stroke-dashoffset:0}}\n` +
     `${fadeOutCss}` +
     `@keyframes fadeIn{to{opacity:1}}\n</style></head><body>` +
     `<svg viewBox="${viewBox}">${pairs}</svg>\n<script>\n` +
     `(function(){var s=document.querySelectorAll(".ap"),f=document.querySelectorAll(".fill-el");` +
     `function reset(){` +
-    `s.forEach(function(p){var d=p.style.getPropertyValue("--s")||"${CONST.STROKE_DUR}";p.style.animation="none";` +
+    `s.forEach(function(p){p.style.animation="none";` +
     `p.style.strokeDashoffset=p.style.getPropertyValue("--l");p.style.strokeOpacity=1;});` +
     `f.forEach(function(p){p.style.animation="none";p.style.opacity=0;});` +
     `void document.querySelector("svg").offsetWidth;` +
-    `s.forEach(function(p){var d=p.style.getPropertyValue("--s")||"${CONST.STROKE_DUR}";` +
-    (keepStrokes
-      ? `p.style.animation="d "+d+"s linear forwards";`
-      : `p.style.animation="d "+d+"s linear forwards, fadeOut ${fd}s linear forwards "+d+"s";`) +
+    `s.forEach(function(p){var d=(p.style.getPropertyValue("--d")||\"0s\");` +
+    `p.style.animationName="d";` +
+    `p.style.animationDuration=(p.style.getPropertyValue("--s")||"6")+"s";` +
+    `p.style.animationDelay=d;` +
+    `p.style.animationTimingFunction="linear";` +
+    `p.style.animationFillMode="forwards";` +
+    (keepStrokes ? ``
+      : `p.style.animationName="d,fadeOut";p.style.animationDuration=(p.style.getPropertyValue(\"--s\")||\"6\")+\"s,${fd}s\";p.style.animationDelay=d;`) +
     `});` +
-    `f.forEach(function(p){var d=p.style.getPropertyValue("--s")||"${CONST.STROKE_DUR}";p.style.animation="fadeIn ${fd}s linear forwards "+d+"s";});}` +
+    `f.forEach(function(p){p.style.animationName="fadeIn";` +
+    `p.style.animationDuration="${fd}s";` +
+    `p.style.animationDelay=p.style.getPropertyValue(\"--d\")||\"0s\";` +
+    `p.style.animationTimingFunction="linear";` +
+    `p.style.animationFillMode="forwards";});}` +
     `reset();setInterval(reset,${cycleMs});})();\n<\/script></body></html>`;
 
   downloadBlob(URL.createObjectURL(new Blob([html], { type: 'text/html' })), 'animation.html');

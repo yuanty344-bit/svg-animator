@@ -36,7 +36,7 @@ export interface AppState {
   syncColors: boolean;
   preserveOriginalColors: boolean;
   sequentialMode: boolean;
-  staggerDelay: number;
+  staggerFactor: number;
   strokeWidth: number;
   bgColor: string;
   autoBgEnabled: boolean;

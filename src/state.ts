@@ -19,7 +19,7 @@ export const state: AppState = {
   syncColors: true,
   preserveOriginalColors: false,
   sequentialMode: false,
-  staggerDelay: 0.15,
+  staggerFactor: 1.0,  // 逐条间隔系数：1=无重叠，0.5=半重叠，2=加停顿
   strokeWidth: 8,
   bgColor: '#000000',
   autoBgEnabled: true,
@@ -43,8 +43,14 @@ export function totalCycle(): number {
   return CONST.STROKE_DUR + CONST.FILL_DUR + CONST.PAUSE_TIME;
 }
 
-/** 单元素动画时长（用于逐条绘制模式） */
+/** 逐条模式：总时长与同步模式一致，但每条路径平分 stroke 时间 */
+export function perElemStrokeDur(elemCount: number): number {
+  if (elemCount <= 1) return CONST.STROKE_DUR;
+  return CONST.STROKE_DUR / elemCount;
+}
+
 export function elementCycle(elemCount: number): number {
-  const base = CONST.STROKE_DUR + CONST.FILL_DUR;
-  return base + (elemCount - 1) * state.staggerDelay + CONST.PAUSE_TIME;
+  if (elemCount <= 1) return totalCycle();
+  const perElem = perElemStrokeDur(elemCount) * state.staggerFactor;
+  return elemCount * perElem + CONST.FILL_DUR + CONST.PAUSE_TIME;
 }

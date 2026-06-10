@@ -1,6 +1,6 @@
 // ── 动画引擎 ──────────────────────────────────────────
 
-import { state, CONST, totalCycle, elementCycle } from './state.js';
+import { state, CONST, totalCycle, elementCycle, perElemStrokeDur } from './state.js';
 import { getLength } from './renderer.js';
 import { hexToRgb } from './utils.js';
 
@@ -19,20 +19,21 @@ export function invalidateFillCache(): void {
 
 export function updateElements(progress: number): void {
   const n = state.strokeElements.length;
-  const cycleDuration = state.sequentialMode
-    ? elementCycle(n)
-    : totalCycle();
+  const cycleDuration = state.sequentialMode ? elementCycle(n) : totalCycle();
   const cycleTime = progress * cycleDuration;
 
+  // 逐条模式：每条路径独立 stroke 时长，无重叠依次绘制
+  const perElemStroke = state.sequentialMode ? perElemStrokeDur(n) : CONST.STROKE_DUR;
+  const stagger = state.sequentialMode ? perElemStroke * state.staggerFactor : 0;
+
+  // ── 描边 ──────────────────────────────────────────────
   state.strokeElements.forEach((el, i) => {
-    // 逐条模式：每条路径有独立的时间偏移
-    const offset = state.sequentialMode ? i * state.staggerDelay : 0;
+    const offset = stagger * i;
     const localTime = Math.max(0, cycleTime - offset);
-    const localProgress = Math.min(1, localTime / (CONST.STROKE_DUR + CONST.FILL_DUR));
 
     let drawProgress: number;
-    if (localTime <= CONST.STROKE_DUR) {
-      drawProgress = localTime / CONST.STROKE_DUR;
+    if (localTime <= perElemStroke) {
+      drawProgress = localTime / perElemStroke;
     } else {
       drawProgress = 1;
     }
@@ -42,12 +43,11 @@ export function updateElements(progress: number): void {
     el.style.stroke = state.strokeColor;
     el.style.strokeWidth = String(state.strokeWidth);
 
-    // 描边消退
     let strokeOpacity: number;
-    if (localTime <= CONST.STROKE_DUR) {
+    if (localTime <= perElemStroke) {
       strokeOpacity = 1;
-    } else if (localTime <= CONST.STROKE_DUR + CONST.FILL_DUR) {
-      strokeOpacity = 1 - (localTime - CONST.STROKE_DUR) / CONST.FILL_DUR;
+    } else if (localTime <= perElemStroke + CONST.FILL_DUR) {
+      strokeOpacity = 1 - (localTime - perElemStroke) / CONST.FILL_DUR;
     } else {
       strokeOpacity = 0;
     }
@@ -56,56 +56,40 @@ export function updateElements(progress: number): void {
       ? state.originalFills[i] !== null
       : state.originalFills.some((f) => f !== null);
     el.style.strokeOpacity = String(
-      state.pathStrokeVisible[i] && hasOwnFill
-        ? strokeOpacity
-        : state.pathStrokeVisible[i]
-          ? 1
-          : 0
+      state.pathStrokeVisible[i] && hasOwnFill ? strokeOpacity
+        : state.pathStrokeVisible[i] ? 1 : 0
     );
   });
 
-  // 填充
+  // ── 填充 ──────────────────────────────────────────────
   if (state.preserveOriginalColors) {
     state.fillElements.forEach((el, i) => {
-      const offset = state.sequentialMode ? i * state.staggerDelay : 0;
+      const offset = stagger * i;
       const localTime = Math.max(0, cycleTime - offset);
-
       let fillOpacity: number;
-      if (localTime <= CONST.STROKE_DUR) {
-        fillOpacity = 0;
-      } else if (localTime <= CONST.STROKE_DUR + CONST.FILL_DUR) {
-        fillOpacity = (localTime - CONST.STROKE_DUR) / CONST.FILL_DUR;
-      } else {
-        fillOpacity = 1;
-      }
+      if (localTime <= perElemStroke) fillOpacity = 0;
+      else if (localTime <= perElemStroke + CONST.FILL_DUR)
+        fillOpacity = (localTime - perElemStroke) / CONST.FILL_DUR;
+      else fillOpacity = 1;
 
       const origFill = state.originalFills[i];
       if (origFill) {
         const rgb = hexToRgb(origFill);
-        if (rgb) {
-          el.style.fill = `rgba(${rgb.r},${rgb.g},${rgb.b},${fillOpacity})`;
-        } else {
-          el.style.fill = origFill;
-          el.style.opacity = String(fillOpacity);
-        }
+        if (rgb) el.style.fill = `rgba(${rgb.r},${rgb.g},${rgb.b},${fillOpacity})`;
+        else { el.style.fill = origFill; el.style.opacity = String(fillOpacity); }
       } else {
-        el.style.fill = 'transparent';
-        el.style.opacity = '1';
+        el.style.fill = 'transparent'; el.style.opacity = '1';
       }
     });
   } else {
     state.fillElements.forEach((el, i) => {
-      const offset = state.sequentialMode ? i * state.staggerDelay : 0;
+      const offset = stagger * i;
       const localTime = Math.max(0, cycleTime - offset);
-
       let fillOpacity: number;
-      if (localTime <= CONST.STROKE_DUR) {
-        fillOpacity = 0;
-      } else if (localTime <= CONST.STROKE_DUR + CONST.FILL_DUR) {
-        fillOpacity = (localTime - CONST.STROKE_DUR) / CONST.FILL_DUR;
-      } else {
-        fillOpacity = 1;
-      }
+      if (localTime <= perElemStroke) fillOpacity = 0;
+      else if (localTime <= perElemStroke + CONST.FILL_DUR)
+        fillOpacity = (localTime - perElemStroke) / CONST.FILL_DUR;
+      else fillOpacity = 1;
 
       const fillRgb = getFillRgb();
       el.style.fill = `rgba(${fillRgb.r},${fillRgb.g},${fillRgb.b},${fillOpacity})`;

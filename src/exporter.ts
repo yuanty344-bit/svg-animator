@@ -1,6 +1,6 @@
 // ── 导出功能 ──────────────────────────────────────────
 
-import { state, CONST, totalCycle, elementCycle } from './state.js';
+import { state, CONST, totalCycle, elementCycle, perElemStrokeDur } from './state.js';
 import { escHtml, parseViewBoxParts } from './utils.js';
 import { getLength } from './renderer.js';
 
@@ -50,12 +50,9 @@ export function exportHTML(): void {
   const { viewBox, elements } = state.currentData;
   const lens = state.currentData.lengths || [];
   const n = elements.length;
-  const stagger = state.sequentialMode ? state.staggerDelay : 0;
-  const cycleMs = Math.round(
-    state.sequentialMode
-      ? (CONST.STROKE_DUR + CONST.FILL_DUR + (n - 1) * stagger + CONST.PAUSE_TIME) * 1000
-      : (CONST.STROKE_DUR + CONST.FILL_DUR + CONST.PAUSE_TIME) * 1000
-  );
+  const perElemStroke = state.sequentialMode ? perElemStrokeDur(n) : CONST.STROKE_DUR;
+  const stagger = state.sequentialMode ? perElemStroke * state.staggerFactor : 0;
+  const cycleMs = Math.round(elementCycle(n) * 1000);
 
   let strokes = '',
     fills = '';
@@ -65,7 +62,7 @@ export function exportHTML(): void {
       .map(([k, v]) => `${k}="${escHtml(v)}"`)
       .join(' ');
     const delay = stagger * i;
-    strokes += `\n    <${el.tag} ${a} class="ap" style="--l:${len}px;--d:${delay.toFixed(2)}s"/>`;
+    strokes += `\n    <${el.tag} ${a} class="ap" style="--l:${len}px;--d:${delay.toFixed(2)}s;--s:${state.sequentialMode ? perElemStroke.toFixed(2) : CONST.STROKE_DUR}s"/>`;
     const origFill = state.originalFills[i];
     const ft =
       state.preserveOriginalColors && origFill
@@ -73,11 +70,11 @@ export function exportHTML(): void {
         : state.preserveOriginalColors
           ? 'transparent'
           : state.fillColor;
-    fills += `\n    <${el.tag} ${a} class="fill-el" style="--fc:${escHtml(ft)};--d:${delay.toFixed(2)}s"/>`;
+    fills += `\n    <${el.tag} ${a} class="fill-el" style="--fc:${escHtml(ft)};--d:${delay.toFixed(2)}s;--s:${state.sequentialMode ? perElemStroke.toFixed(2) : CONST.STROKE_DUR}s"/>`;
   });
 
   const fillCss = state.preserveOriginalColors ? 'fill:var(--fc)' : `fill:${escHtml(state.fillColor)}`;
-  const animDelay = state.sequentialMode ? `animation-delay:var(--d);` : '';
+  const strokeDur = state.sequentialMode ? 'var(--s)' : String(CONST.STROKE_DUR);
 
   const html =
     `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>SVG Animation</title>\n` +
@@ -86,18 +83,18 @@ export function exportHTML(): void {
     `svg{width:min(80vw,80vh,480px);height:min(80vw,80vh,480px)}\n` +
     `.ap{fill:transparent;stroke:${escHtml(state.strokeColor)};stroke-width:${state.strokeWidth};` +
     `stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:var(--l);stroke-dashoffset:var(--l);` +
-    `animation:d ${CONST.STROKE_DUR}s ease-in-out forwards,fadeOut ${CONST.FILL_DUR}s ease-in-out forwards ${CONST.STROKE_DUR}s;${animDelay}}\n` +
-    `.fill-el{fill:transparent;stroke:none;animation:fadeIn ${CONST.FILL_DUR}s ease-in-out forwards ${CONST.STROKE_DUR}s;${animDelay}}\n` +
+    `animation:d ${strokeDur}s ease-in-out forwards,fadeOut ${CONST.FILL_DUR}s ease-in-out forwards ${strokeDur}s;animation-delay:var(--d)}\n` +
+    `.fill-el{fill:transparent;stroke:none;animation:fadeIn ${CONST.FILL_DUR}s ease-in-out forwards ${strokeDur}s;animation-delay:var(--d)}\n` +
     `@keyframes d{to{stroke-dashoffset:0}}\n@keyframes fadeOut{to{stroke-opacity:0}}\n` +
     `@keyframes fadeIn{to{${fillCss}}}\n</style></head><body>` +
     `<svg viewBox="${viewBox}">${strokes}${fills}</svg>\n<script>\n` +
     `(function(){var s=document.querySelectorAll(".ap"),f=document.querySelectorAll(".fill-el");` +
-    `function reset(){s.forEach(function(p){p.style.animation="none";` +
+    `function reset(){s.forEach(function(p){var d=p.style.getPropertyValue("--s")||"${CONST.STROKE_DUR}";p.style.animation="none";` +
     `p.style.strokeDashoffset=p.style.getPropertyValue("--l");p.style.strokeOpacity=1;});` +
     `f.forEach(function(p){p.style.animation="none";p.style.fill="transparent";});` +
     `void document.querySelector("svg").offsetWidth;` +
-    `s.forEach(function(p){p.style.animation="d ${CONST.STROKE_DUR}s ease-in-out forwards, fadeOut ${CONST.FILL_DUR}s ease-in-out forwards ${CONST.STROKE_DUR}s";});` +
-    `f.forEach(function(p){p.style.animation="fadeIn ${CONST.FILL_DUR}s ease-in-out forwards ${CONST.STROKE_DUR}s";});}` +
+    `s.forEach(function(p){var d=p.style.getPropertyValue("--s")||"${CONST.STROKE_DUR}";p.style.animation="d "+d+"s ease-in-out forwards, fadeOut ${CONST.FILL_DUR}s ease-in-out forwards "+d+"s";});` +
+    `f.forEach(function(p){var d=p.style.getPropertyValue("--s")||"${CONST.STROKE_DUR}";p.style.animation="fadeIn ${CONST.FILL_DUR}s ease-in-out forwards "+d+"s";});}` +
     `reset();setInterval(reset,${cycleMs});})();\n<\/script></body></html>`;
 
   downloadBlob(URL.createObjectURL(new Blob([html], { type: 'text/html' })), 'animation.html');

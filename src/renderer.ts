@@ -78,13 +78,9 @@ export function rebuildPreviewDOM(): void {
   const previewSvg = document.getElementById('previewSvg')!;
   let { viewBox, elements } = state.currentData;
 
-  if (state.preserveOriginalColors) {
-    elements = state.currentData.originalElements || elements;
-    state.currentData.elements = elements;
-  } else if (state.autoBgEnabled && elements.length > 1) {
-    elements = sortElementsByArea(elements);
-    state.currentData.elements = elements;
-  }
+  // 始终使用原始 SVG 元素顺序
+  elements = state.currentData.originalElements || elements;
+  state.currentData.elements = elements;
 
   measureAndCacheLengths();
   state.pathStrokeVisible = elements.map(() => true);

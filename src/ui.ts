@@ -2,7 +2,7 @@
 
 import { state, CONST, totalCycle, elementCycle } from './state.js';
 import { parseSVG } from './parser.js';
-import { rebuildPreviewDOM, reorderDomElements, measureAndCacheLengths, sortElementsByArea } from './renderer.js';
+import { rebuildPreviewDOM, reorderDomElements, measureAndCacheLengths } from './renderer.js';
 import { updateColors, updateElements, invalidateFillCache, resetAnimation, tick } from './animator.js';
 import { buildCurrentSnapshotSVG, exportHTML, exportSVG, exportImage, showToast } from './exporter.js';
 
@@ -280,11 +280,8 @@ export function initUI(): void {
   autoBgCheckPanel.addEventListener('change', () => {
     const newAutoBg = autoBgCheckPanel.checked;
     if (newAutoBg === state.autoBgEnabled) return;
-    if (state.preserveOriginalColors) {
-      state.currentData!.elements = state.currentData!.originalElements || state.currentData!.elements;
-    } else if (newAutoBg && state.currentData && state.currentData.elements.length > 1) {
-      state.currentData.elements = sortElementsByArea(state.currentData.elements);
-    }
+    // 始终使用原始 SVG 顺序
+    state.currentData!.elements = state.currentData!.originalElements || state.currentData!.elements;
     measureAndCacheLengths();
     reorderDomElements();
     state.pathStrokeVisible = state.currentData!.elements.map(() => true);

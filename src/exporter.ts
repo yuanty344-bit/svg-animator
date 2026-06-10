@@ -76,6 +76,13 @@ export function exportHTML(): void {
 
   const fillCss = state.preserveOriginalColors ? 'fill:var(--fc)' : `fill:${escHtml(state.fillColor)}`;
   const strokeDur = state.sequentialMode ? 'var(--s)' : String(CONST.STROKE_DUR);
+  const keepStrokes = state.keepStrokes;
+
+  // 描边动画 CSS：保留描边时不加 fadeOut
+  const apAnim = keepStrokes
+    ? `animation:d ${strokeDur}s ease-in-out forwards`
+    : `animation:d ${strokeDur}s ease-in-out forwards,fadeOut ${CONST.FILL_DUR}s ease-in-out forwards ${strokeDur}s`;
+  const fadeOutCss = keepStrokes ? '' : `@keyframes fadeOut{to{stroke-opacity:0}}`;
 
   const html =
     `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>SVG Animation</title>\n` +
@@ -84,17 +91,23 @@ export function exportHTML(): void {
     `svg{width:min(80vw,80vh,480px);height:min(80vw,80vh,480px)}\n` +
     `.ap{fill:transparent;stroke:${escHtml(state.strokeColor)};stroke-width:${state.strokeWidth};` +
     `stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:var(--l);stroke-dashoffset:var(--l);` +
-    `animation:d ${strokeDur}s ease-in-out forwards,fadeOut ${CONST.FILL_DUR}s ease-in-out forwards ${strokeDur}s;animation-delay:var(--d)}\n` +
+    `${apAnim};animation-delay:var(--d)}\n` +
     `.fill-el{fill:transparent;stroke:none;animation:fadeIn ${CONST.FILL_DUR}s ease-in-out forwards ${strokeDur}s;animation-delay:var(--d)}\n` +
-    `@keyframes d{to{stroke-dashoffset:0}}\n@keyframes fadeOut{to{stroke-opacity:0}}\n` +
+    `@keyframes d{to{stroke-dashoffset:0}}\n` +
+    `${fadeOutCss}` +
     `@keyframes fadeIn{to{${fillCss}}}\n</style></head><body>` +
     `<svg viewBox="${viewBox}">${strokes}${fills}</svg>\n<script>\n` +
     `(function(){var s=document.querySelectorAll(".ap"),f=document.querySelectorAll(".fill-el");` +
-    `function reset(){s.forEach(function(p){var d=p.style.getPropertyValue("--s")||"${CONST.STROKE_DUR}";p.style.animation="none";` +
+    `function reset(){` +
+    `s.forEach(function(p){var d=p.style.getPropertyValue("--s")||"${CONST.STROKE_DUR}";p.style.animation="none";` +
     `p.style.strokeDashoffset=p.style.getPropertyValue("--l");p.style.strokeOpacity=1;});` +
     `f.forEach(function(p){p.style.animation="none";p.style.fill="transparent";});` +
     `void document.querySelector("svg").offsetWidth;` +
-    `s.forEach(function(p){var d=p.style.getPropertyValue("--s")||"${CONST.STROKE_DUR}";p.style.animation="d "+d+"s ease-in-out forwards, fadeOut ${CONST.FILL_DUR}s ease-in-out forwards "+d+"s";});` +
+    `s.forEach(function(p){var d=p.style.getPropertyValue("--s")||"${CONST.STROKE_DUR}";` +
+    (keepStrokes
+      ? `p.style.animation="d "+d+"s ease-in-out forwards";`
+      : `p.style.animation="d "+d+"s ease-in-out forwards, fadeOut ${CONST.FILL_DUR}s ease-in-out forwards "+d+"s";`) +
+    `});` +
     `f.forEach(function(p){var d=p.style.getPropertyValue("--s")||"${CONST.STROKE_DUR}";p.style.animation="fadeIn ${CONST.FILL_DUR}s ease-in-out forwards "+d+"s";});}` +
     `reset();setInterval(reset,${cycleMs});})();\n<\/script></body></html>`;
 

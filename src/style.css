@@ -54,27 +54,41 @@ input[type=color]::-webkit-color-swatch{border-radius:3px;border:1px solid rgba(
 .top-bar{
   border-bottom:1px solid rgba(255,255,255,.08);
   background:rgba(255,255,255,.02);
-  padding:6px 16px;
+  padding:5px 14px;
 }
 .top-bar .bar-row{
-  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
 }
-.top-bar .icon-btn{width:30px;height:30px;border-radius:8px}
-.top-bar .icon-btn svg{width:15px;height:15px}
-.top-bar .text-btn{padding:5px 12px;font-size:11px}
 .top-bar .export-select{padding:4px 10px;font-size:11px}
-.bar-sep{width:1px;height:18px;background:rgba(255,255,255,.1);flex-shrink:0}
+.top-bar .text-btn{padding:5px 12px;font-size:11px}
+.bar-label{font-size:10px;opacity:.5;white-space:nowrap}
+.bar-sep{width:1px;height:16px;background:rgba(255,255,255,.1);flex-shrink:0}
+.mini-btn{
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);
+  border-radius:6px;color:#fff;font-size:10px;cursor:pointer;
+  padding:4px 8px;white-space:nowrap;transition:.2s;
+  display:flex;align-items:center;gap:3px;
+}
+.mini-btn:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.3)}
+.val{
+  display:inline-block;min-width:32px;text-align:center;
+  font-size:11px;opacity:.7;flex-shrink:0;
+}
 
 /* 底部栏 */
 .bottom-bar{
   border-top:1px solid rgba(255,255,255,.1);
   background:rgba(255,255,255,.03);
-  padding:8px 16px;
-  display:flex;align-items:center;justify-content:center;gap:16px;
-  flex-wrap:wrap;
+  padding:6px 14px;
+  display:flex;align-items:center;gap:14px;
 }
-.bottom-bar .timeline-wrap{flex:1;min-width:120px;max-width:400px}
-.bottom-bar .icon-btn{width:34px;height:34px}
+.bottom-bar .icon-btn{width:34px;height:34px;flex-shrink:0}
+.timeline-wrap{
+  flex:1;display:flex;align-items:center;gap:6px;
+  min-width:100px;
+}
+.timeline-wrap input[type=range]{flex:1}
+.timeline-wrap .val{min-width:36px}
 .sync-inline{display:flex;align-items:center;gap:4px;font-size:11px;opacity:.6;cursor:pointer}
 .sync-inline input{accent-color:#fff;margin:0}
 .btn-row{display:flex;gap:8px;align-items:center}

@@ -25,10 +25,13 @@ export function renderLayerPathList(): void {
       updateElements(state.currentProgress);
     });
     div.appendChild(cb);
-    // 逐路径颜色选择器
+    // 逐路径颜色选择器：显示当前有效填充色
     const colorInput = document.createElement('input');
     colorInput.type = 'color';
-    colorInput.value = state.originalFills[i] || '#ffffff';
+    const effectiveColor = state.preserveOriginalColors
+      ? (state.originalFills[i] || '#ffffff')
+      : state.fillColor;
+    colorInput.value = effectiveColor;
     colorInput.title = '路径 ' + (i + 1) + ' 颜色';
     colorInput.style.cssText = 'width:18px;height:18px;border:none;background:transparent;cursor:pointer;padding:0;flex-shrink:0';
     colorInput.addEventListener('input', function () {
@@ -197,7 +200,10 @@ export function initUI(): void {
   syncCheckbox.addEventListener('change', () => { state.syncColors = syncCheckbox.checked; updateColors(); });
   preserveColorsCheckbox.addEventListener('change', () => {
     state.preserveOriginalColors = preserveColorsCheckbox.checked;
-    if (state.currentData) fullRebuild();
+    if (state.currentData) {
+      fullRebuild();
+      if (layerPanel.style.display === 'flex') renderLayerPathList();
+    }
     showToast(state.preserveOriginalColors ? '保留原色：开' : '统一颜色：开');
   });
   sequentialCheckbox.addEventListener('change', () => {
@@ -282,8 +288,11 @@ export function initUI(): void {
     if (layerPanel.style.display === 'flex') {
       layerPanel.style.display = 'none';
     } else {
-      if (state.currentData) { renderLayerPathList(); autoBgCheckPanel.checked = state.autoBgEnabled; }
-      layerPanel.style.display = 'flex';
+      if (state.currentData) {
+      renderLayerPathList();
+      autoBgCheckPanel.checked = state.autoBgEnabled;
+    }
+    layerPanel.style.display = 'flex';
     }
   });
   $('layerClose').addEventListener('click', () => { layerPanel.style.display = 'none'; });

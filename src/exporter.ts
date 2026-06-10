@@ -94,10 +94,10 @@ export function exportHTML(): void {
     `svg{width:min(80vw,80vh,480px);height:min(80vw,80vh,480px)}\n` +
     `.ap{fill:transparent;stroke:${escHtml(state.strokeColor)};stroke-width:${state.strokeWidth};` +
     `stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:var(--l);stroke-dashoffset:var(--l);` +
-    `animation-name:${apAnimName};animation-duration:${apAnimDur};animation-timing-function:linear;` +
+    `animation-name:${apAnimName};animation-duration:${apAnimDur};animation-timing-function:${state.easing};` +
     `animation-fill-mode:forwards;animation-delay:${apAnimDelay}}\n` +
     `.fill-el{opacity:0;fill:${fillVal};stroke:none;` +
-    `animation-name:fadeIn;animation-duration:${fd}s;animation-timing-function:linear;` +
+    `animation-name:fadeIn;animation-duration:${fd}s;animation-timing-function:${state.easing};` +
     `animation-fill-mode:forwards;animation-delay:calc(var(--d) + ${strokeDur}s)}\n` +
     `@keyframes d{to{stroke-dashoffset:0}}\n` +
     `${fadeOutCss}` +
@@ -113,7 +113,7 @@ export function exportHTML(): void {
     `p.style.animationName="d";` +
     `p.style.animationDuration=(p.style.getPropertyValue("--s")||"6")+"s";` +
     `p.style.animationDelay=d;` +
-    `p.style.animationTimingFunction="linear";` +
+    `p.style.animationTimingFunction="${state.easing}";` +
     `p.style.animationFillMode="forwards";` +
     (keepStrokes ? ``
       : `p.style.animationName="d,fadeOut";p.style.animationDuration=(p.style.getPropertyValue(\"--s\")||\"6\")+\"s,${fd}s\";p.style.animationDelay=d+\",calc(\"+d+\" + \"+(p.style.getPropertyValue(\"--s\")||\"6\")+\"*1s)\";`) +
@@ -121,7 +121,7 @@ export function exportHTML(): void {
     `f.forEach(function(p){p.style.animationName="fadeIn";` +
     `p.style.animationDuration="${fd}s";` +
     `p.style.animationDelay="calc("+(p.style.getPropertyValue(\"--d\")||\"0s\")+\" + \"+(p.style.getPropertyValue(\"--s\")||\"6\")+\"s)\";` +
-    `p.style.animationTimingFunction="linear";` +
+    `p.style.animationTimingFunction="${state.easing}";` +
     `p.style.animationFillMode="forwards";});}` +
     `reset();setInterval(reset,${cycleMs});})();\n<\/script></body></html>`;
 

@@ -38,6 +38,7 @@ export interface AppState {
   sequentialMode: boolean;
   staggerFactor: number;
   keepStrokes: boolean;
+  easing: string;
   strokeWidth: number;
   bgColor: string;
   autoBgEnabled: boolean;

@@ -21,6 +21,7 @@ export const state: AppState = {
   sequentialMode: false,
   staggerFactor: 1.0,
   keepStrokes: true,
+  easing: 'linear',
   strokeWidth: 8,
   bgColor: '#000000',
   autoBgEnabled: true,

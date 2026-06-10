@@ -42,6 +42,16 @@ export function hexToRgb(hex: string): RGB | null {
   return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
 }
 
+/** 缓动函数 */
+export function applyEasing(t: number, type: string): number {
+  switch (type) {
+    case 'ease-in': return t * t * t;
+    case 'ease-out': return 1 - Math.pow(1 - t, 3);
+    case 'ease-in-out': return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    default: return t; // linear
+  }
+}
+
 export function withTempSVG<T>(viewBox: string, fn: (svg: SVGElement) => T): T {
   const tmp = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   tmp.setAttribute('viewBox', viewBox);

@@ -2,7 +2,7 @@
 
 import { state, CONST, totalCycle, elementCycle, perElemStrokeDur } from './state.js';
 import { getLength } from './renderer.js';
-import { hexToRgb } from './utils.js';
+import { hexToRgb, applyEasing } from './utils.js';
 
 function getFillRgb() {
   if (state.cachedFillRgb && state.cachedFillHex === state.fillColor)
@@ -31,12 +31,13 @@ export function updateElements(progress: number): void {
     const offset = stagger * i;
     const localTime = Math.max(0, cycleTime - offset);
 
-    let drawProgress: number;
+    let rawDraw: number;
     if (localTime <= perElemStroke) {
-      drawProgress = localTime / perElemStroke;
+      rawDraw = localTime / perElemStroke;
     } else {
-      drawProgress = 1;
+      rawDraw = 1;
     }
+    const drawProgress = applyEasing(rawDraw, state.easing);
 
     const len = getLength(i);
     el.style.strokeDashoffset = String(len * (1 - drawProgress));
@@ -68,11 +69,12 @@ export function updateElements(progress: number): void {
     state.fillElements.forEach((el, i) => {
       const offset = stagger * i;
       const localTime = Math.max(0, cycleTime - offset);
-      let fillOpacity: number;
-      if (localTime <= perElemStroke) fillOpacity = 0;
+      let rawFill: number;
+      if (localTime <= perElemStroke) rawFill = 0;
       else if (localTime <= perElemStroke + CONST.FILL_DUR)
-        fillOpacity = (localTime - perElemStroke) / CONST.FILL_DUR;
-      else fillOpacity = 1;
+        rawFill = (localTime - perElemStroke) / CONST.FILL_DUR;
+      else rawFill = 1;
+      const fillOpacity = applyEasing(rawFill, state.easing);
 
       const origFill = state.originalFills[i];
       if (origFill) {
@@ -87,11 +89,12 @@ export function updateElements(progress: number): void {
     state.fillElements.forEach((el, i) => {
       const offset = stagger * i;
       const localTime = Math.max(0, cycleTime - offset);
-      let fillOpacity: number;
-      if (localTime <= perElemStroke) fillOpacity = 0;
+      let rawFill: number;
+      if (localTime <= perElemStroke) rawFill = 0;
       else if (localTime <= perElemStroke + CONST.FILL_DUR)
-        fillOpacity = (localTime - perElemStroke) / CONST.FILL_DUR;
-      else fillOpacity = 1;
+        rawFill = (localTime - perElemStroke) / CONST.FILL_DUR;
+      else rawFill = 1;
+      const fillOpacity = applyEasing(rawFill, state.easing);
 
       const fillRgb = getFillRgb()!;
       el.style.fill = `rgba(${fillRgb.r},${fillRgb.g},${fillRgb.b},${fillOpacity})`;

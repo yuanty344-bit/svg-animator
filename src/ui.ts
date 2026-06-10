@@ -25,14 +25,21 @@ export function renderLayerPathList(): void {
       updateElements(state.currentProgress);
     });
     div.appendChild(cb);
-    const of = state.originalFills[i];
-    if (of) {
-      const dot = document.createElement('span');
-      dot.className = 'fill-dot';
-      dot.style.backgroundColor = of;
-      dot.title = of;
-      div.appendChild(dot);
-    }
+    // 逐路径颜色选择器
+    const colorInput = document.createElement('input');
+    colorInput.type = 'color';
+    colorInput.value = state.originalFills[i] || '#ffffff';
+    colorInput.title = '路径 ' + (i + 1) + ' 颜色';
+    colorInput.style.cssText = 'width:18px;height:18px;border:none;background:transparent;cursor:pointer;padding:0;flex-shrink:0';
+    colorInput.addEventListener('input', function () {
+      state.originalFills[i] = colorInput.value;
+      state.preserveOriginalColors = true;
+      const preserveCheckbox = document.getElementById('preserveColors') as HTMLInputElement;
+      preserveCheckbox.checked = true;
+      updateElements(state.currentProgress);
+    });
+    div.appendChild(colorInput);
+
     const label = document.createElement('span');
     label.textContent = el.tag + ' ' + (i + 1);
     div.appendChild(label);
@@ -206,6 +213,11 @@ export function initUI(): void {
     state.keepStrokes = keepStrokesCheckbox.checked;
     updateElements(state.currentProgress);
   });
+  const easingSelect = $('easing') as HTMLSelectElement;
+  easingSelect.addEventListener('change', () => {
+    state.easing = easingSelect.value;
+    updateElements(state.currentProgress);
+  });
   const staggerSlider = $('staggerFactor') as HTMLInputElement;
   const staggerVal = $('staggerVal');
   staggerSlider.addEventListener('input', () => {
@@ -262,6 +274,7 @@ export function initUI(): void {
     state.sequentialMode = false; sequentialCheckbox.checked = false;
     state.staggerFactor = 1; staggerSlider.value = '1'; staggerVal.textContent = '1×';
     state.keepStrokes = true; keepStrokesCheckbox.checked = true;
+    state.easing = 'linear'; easingSelect.value = 'linear';
     fullRebuild();
     fileInput.value = '';
     if (state.keyboardResumeTimer) { clearTimeout(state.keyboardResumeTimer); state.keyboardResumeTimer = null; }

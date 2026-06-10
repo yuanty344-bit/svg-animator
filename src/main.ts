@@ -6,3 +6,9 @@ if (document.readyState === 'loading') {
 } else {
   initUI();
 }
+
+// PWA: register service worker for offline caching (only on https/localhost)
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+

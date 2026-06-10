@@ -96,9 +96,16 @@ export function updateElements(progress: number): void {
       else rawFill = 1;
       const fillOpacity = applyEasing(rawFill, state.easing);
 
-      const fillRgb = getFillRgb()!;
-      el.style.fill = `rgba(${fillRgb.r},${fillRgb.g},${fillRgb.b},${fillOpacity})`;
-      el.style.opacity = '1';
+      const custom = state.customFills[i];
+      if (custom) {
+        const rgb = hexToRgb(custom);
+        if (rgb) el.style.fill = `rgba(${rgb.r},${rgb.g},${rgb.b},${fillOpacity})`;
+        else { el.style.fill = custom; el.style.opacity = String(fillOpacity); }
+      } else {
+        const fillRgb = getFillRgb()!;
+        el.style.fill = `rgba(${fillRgb.r},${fillRgb.g},${fillRgb.b},${fillOpacity})`;
+        el.style.opacity = '1';
+      }
     });
   }
 }

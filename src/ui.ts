@@ -28,14 +28,15 @@ export function renderLayerPathList(): void {
     // 逐路径颜色选择器：显示当前有效填充色
     const colorInput = document.createElement('input');
     colorInput.type = 'color';
-    const effectiveColor = state.preserveOriginalColors
-      ? (state.originalFills[i] || '#ffffff')
-      : state.fillColor;
+    const customColor = state.customFills[i];
+    const effectiveColor = customColor
+      || (state.preserveOriginalColors ? state.originalFills[i] : state.fillColor)
+      || '#ffffff';
     colorInput.value = effectiveColor;
     colorInput.title = '路径 ' + (i + 1) + ' 颜色';
     colorInput.style.cssText = 'width:18px;height:18px;border:none;background:transparent;cursor:pointer;padding:0;flex-shrink:0';
     colorInput.addEventListener('input', function () {
-      state.originalFills[i] = colorInput.value;
+      state.customFills[i] = colorInput.value;
       updateElements(state.currentProgress);
     });
     div.appendChild(colorInput);
@@ -279,6 +280,8 @@ export function initUI(): void {
     state.keepStrokes = true; keepStrokesCheckbox.checked = true;
     state.easing = 'linear'; easingSelect.value = 'linear';
     fullRebuild();
+    state.customFills = state.originalFills.map(() => null);
+    if (layerPanel.style.display === 'flex') renderLayerPathList();
     fileInput.value = '';
     if (state.keyboardResumeTimer) { clearTimeout(state.keyboardResumeTimer); state.keyboardResumeTimer = null; }
   });

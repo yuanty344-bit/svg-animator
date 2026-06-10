@@ -87,6 +87,7 @@ export function rebuildPreviewDOM(): void {
   state.strokeElements = [];
   state.fillElements = [];
   state.originalFills = [];
+  state.customFills = [];
   previewSvg.innerHTML = '';
   previewSvg.setAttribute('viewBox', viewBox);
 
@@ -98,6 +99,7 @@ export function rebuildPreviewDOM(): void {
     previewSvg.appendChild(fEl);
     state.fillElements.push(fEl);
     state.originalFills.push(elements[i].originalFill || null);
+    state.customFills.push(null);
   }
 }
 
@@ -107,6 +109,7 @@ export function reorderDomElements(): void {
   state.strokeElements = [];
   state.fillElements = [];
   state.originalFills = [];
+  state.customFills = [];
   const newElements = state.currentData!.elements;
   for (let i = 0; i < newElements.length; i++) {
     const len = getLength(i);
@@ -116,5 +119,6 @@ export function reorderDomElements(): void {
     previewSvg.appendChild(fEl);
     state.fillElements.push(fEl);
     state.originalFills.push(newElements[i].originalFill || null);
+    state.customFills.push(null);
   }
 }

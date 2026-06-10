@@ -7,6 +7,7 @@ export const state: AppState = {
   strokeElements: [],
   fillElements: [],
   originalFills: [],
+  customFills: [] as (string | null)[],
   lengths: [],
   currentProgress: 0,
   paused: false,

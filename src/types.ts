@@ -24,6 +24,7 @@ export interface AppState {
   strokeElements: SVGElement[];
   fillElements: SVGElement[];
   originalFills: (string | null)[];
+  customFills: (string | null)[];
   lengths: number[];
   currentProgress: number;
   paused: boolean;

@@ -64,7 +64,7 @@ export function exportHTML(): void {
       .map(([k, v]) => `${k}="${escHtml(v)}"`)
       .join(' ');
     const delay = stagger * i;
-    const strokeSec = (state.sequentialMode ? perElemStroke : CONST.STROKE_DUR).toFixed(2);
+    const strokeSec = perElemStroke.toFixed(2);
     pairs += `\n    <${el.tag} ${a} class="ap" style="--l:${len}px;--d:${delay.toFixed(2)}s;--s:${strokeSec}"/>`;
     const origFill = state.originalFills[i];
     const ft =
@@ -80,12 +80,10 @@ export function exportHTML(): void {
   const strokeDur = state.sequentialMode ? 'var(--s)' : String(CONST.STROKE_DUR);
   const keepStrokes = state.keepStrokes;
 
-  // 描边动画 CSS：保留描边时不加 fadeOut
   const fd = fillDur.toFixed(2);
-  const apAnim = keepStrokes
-    ? `animation:d ${strokeDur}s linear forwards`
-    : `animation:d ${strokeDur}s linear forwards,fadeOut ${fd}s linear forwards ${strokeDur}s`;
   const fadeOutCss = keepStrokes ? '' : `@keyframes fadeOut{to{stroke-opacity:0}}`;
+  const apAnimName = keepStrokes ? 'd' : 'd,fadeOut';
+  const apAnimDur = keepStrokes ? 'var(--s)s' : `var(--s)s,${fd}s`;
 
   const html =
     `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>SVG Animation</title>\n` +
@@ -94,7 +92,7 @@ export function exportHTML(): void {
     `svg{width:min(80vw,80vh,480px);height:min(80vw,80vh,480px)}\n` +
     `.ap{fill:transparent;stroke:${escHtml(state.strokeColor)};stroke-width:${state.strokeWidth};` +
     `stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:var(--l);stroke-dashoffset:var(--l);` +
-    `animation-name:d;animation-duration:var(--s)s;animation-timing-function:linear;` +
+    `animation-name:${apAnimName};animation-duration:${apAnimDur};animation-timing-function:linear;` +
     `animation-fill-mode:forwards;animation-delay:var(--d)}\n` +
     `.fill-el{opacity:0;fill:${fillVal};stroke:none;` +
     `animation-name:fadeIn;animation-duration:${fd}s;animation-timing-function:linear;` +

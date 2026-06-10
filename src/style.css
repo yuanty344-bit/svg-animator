@@ -60,6 +60,11 @@ input[type=color]::-webkit-color-swatch{border-radius:3px;border:1px solid rgba(
 .top-bar .bar-row{
   display:flex;align-items:center;gap:8px;flex-wrap:wrap;
 }
+.top-bar .icon-btn{
+  width:auto;height:26px;border-radius:6px;padding:0 8px;gap:5px;
+}
+.top-bar .icon-btn svg{width:14px;height:14px}
+.icon-label{font-size:10px;opacity:.7;white-space:nowrap}
 .top-bar .export-select{padding:4px 10px;font-size:11px}
 .top-bar .text-btn{padding:5px 12px;font-size:11px}
 .bar-label{font-size:10px;opacity:.5;white-space:nowrap}

@@ -50,12 +50,14 @@ export function exportHTML(): void {
   const { viewBox, elements } = state.currentData;
   const lens = state.currentData.lengths || [];
   const n = elements.length;
-  const perElemStroke = state.sequentialMode ? perElemStrokeDur(n) : CONST.STROKE_DUR;
+  const spd = 1 / state.speedFactor;  // speedFactor在导出HTML中体现为时长缩放
+  const perElemStroke = (state.sequentialMode ? perElemStrokeDur(n) : CONST.STROKE_DUR) * spd;
+  const fillDur = CONST.FILL_DUR * spd;
   const stagger = state.sequentialMode ? perElemStroke * state.staggerFactor : 0;
-  const cycleMs = Math.round(elementCycle(n) * 1000);
+  const cycleMs = Math.round(elementCycle(n) * spd * 1000);
 
-  let strokes = '',
-    fills = '';
+  // 交错排列描边和填色，和预览区 DOM 顺序一致
+  let pairs = '';
   elements.forEach((el, i) => {
     const len = lens[i] || getLength(i);
     const a = Object.entries(el.attrs)
@@ -63,7 +65,7 @@ export function exportHTML(): void {
       .join(' ');
     const delay = stagger * i;
     const strokeSec = (state.sequentialMode ? perElemStroke : CONST.STROKE_DUR).toFixed(2);
-    strokes += `\n    <${el.tag} ${a} class="ap" style="--l:${len}px;--d:${delay.toFixed(2)}s;--s:${strokeSec}"/>`;
+    pairs += `\n    <${el.tag} ${a} class="ap" style="--l:${len}px;--d:${delay.toFixed(2)}s;--s:${strokeSec}"/>`;
     const origFill = state.originalFills[i];
     const ft =
       state.preserveOriginalColors && origFill
@@ -71,7 +73,7 @@ export function exportHTML(): void {
         : state.preserveOriginalColors
           ? 'transparent'
           : state.fillColor;
-    fills += `\n    <${el.tag} ${a} class="fill-el" style="--fc:${escHtml(ft)};--d:${delay.toFixed(2)}s;--s:${strokeSec}"/>`;
+    pairs += `\n    <${el.tag} ${a} class="fill-el" style="--fc:${escHtml(ft)};--d:${delay.toFixed(2)}s;--s:${strokeSec}"/>`;
   });
 
   const fillVal = state.preserveOriginalColors ? 'var(--fc)' : escHtml(state.fillColor);
@@ -79,9 +81,10 @@ export function exportHTML(): void {
   const keepStrokes = state.keepStrokes;
 
   // 描边动画 CSS：保留描边时不加 fadeOut
+  const fd = fillDur.toFixed(2);
   const apAnim = keepStrokes
     ? `animation:d ${strokeDur}s linear forwards`
-    : `animation:d ${strokeDur}s linear forwards,fadeOut ${CONST.FILL_DUR}s linear forwards ${strokeDur}s`;
+    : `animation:d ${strokeDur}s linear forwards,fadeOut ${fd}s linear forwards ${strokeDur}s`;
   const fadeOutCss = keepStrokes ? '' : `@keyframes fadeOut{to{stroke-opacity:0}}`;
 
   const html =
@@ -92,11 +95,11 @@ export function exportHTML(): void {
     `.ap{fill:transparent;stroke:${escHtml(state.strokeColor)};stroke-width:${state.strokeWidth};` +
     `stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:var(--l);stroke-dashoffset:var(--l);` +
     `${apAnim};animation-delay:var(--d)}\n` +
-    `.fill-el{opacity:0;fill:${fillVal};stroke:none;animation:fadeIn ${CONST.FILL_DUR}s linear forwards ${strokeDur}s;animation-delay:var(--d)}\n` +
+    `.fill-el{opacity:0;fill:${fillVal};stroke:none;animation:fadeIn ${fd}s linear forwards ${strokeDur}s;animation-delay:var(--d)}\n` +
     `@keyframes d{to{stroke-dashoffset:0}}\n` +
     `${fadeOutCss}` +
     `@keyframes fadeIn{to{opacity:1}}\n</style></head><body>` +
-    `<svg viewBox="${viewBox}">${strokes}${fills}</svg>\n<script>\n` +
+    `<svg viewBox="${viewBox}">${pairs}</svg>\n<script>\n` +
     `(function(){var s=document.querySelectorAll(".ap"),f=document.querySelectorAll(".fill-el");` +
     `function reset(){` +
     `s.forEach(function(p){var d=p.style.getPropertyValue("--s")||"${CONST.STROKE_DUR}";p.style.animation="none";` +
@@ -106,9 +109,9 @@ export function exportHTML(): void {
     `s.forEach(function(p){var d=p.style.getPropertyValue("--s")||"${CONST.STROKE_DUR}";` +
     (keepStrokes
       ? `p.style.animation="d "+d+"s linear forwards";`
-      : `p.style.animation="d "+d+"s linear forwards, fadeOut ${CONST.FILL_DUR}s linear forwards "+d+"s";`) +
+      : `p.style.animation="d "+d+"s linear forwards, fadeOut ${fd}s linear forwards "+d+"s";`) +
     `});` +
-    `f.forEach(function(p){var d=p.style.getPropertyValue("--s")||"${CONST.STROKE_DUR}";p.style.animation="fadeIn ${CONST.FILL_DUR}s linear forwards "+d+"s";});}` +
+    `f.forEach(function(p){var d=p.style.getPropertyValue("--s")||"${CONST.STROKE_DUR}";p.style.animation="fadeIn ${fd}s linear forwards "+d+"s";});}` +
     `reset();setInterval(reset,${cycleMs});})();\n<\/script></body></html>`;
 
   downloadBlob(URL.createObjectURL(new Blob([html], { type: 'text/html' })), 'animation.html');

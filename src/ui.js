@@ -1,0 +1,455 @@
+// ── UI 事件 & 图层面板 ──────────────────────────────────
+
+import { state, CONST, totalCycle } from './state.js';
+import { parseSVG } from './parser.js';
+import {
+  rebuildPreviewDOM,
+  reorderDomElements,
+  measureAndCacheLengths,
+  sortElementsByArea,
+} from './renderer.js';
+import {
+  updateColors,
+  updateElements,
+  invalidateFillCache,
+  resetAnimation,
+  tick,
+} from './animator.js';
+import {
+  buildCurrentSnapshotSVG,
+  exportHTML,
+  exportSVG,
+  exportImage,
+  showToast,
+} from './exporter.js';
+
+// ── 图层面板 ────────────────────────────────────────────
+
+export function renderLayerPathList() {
+  const layerPathList = document.getElementById('layerPathList');
+  layerPathList.innerHTML = '';
+  if (!state.currentData) return;
+  state.currentData.elements.forEach((el, i) => {
+    const div = document.createElement('div');
+    div.className = 'path-item';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = state.pathStrokeVisible[i];
+    cb.dataset.index = i;
+    cb.addEventListener('change', function () {
+      const idx = parseInt(this.dataset.index);
+      state.pathStrokeVisible[idx] = this.checked;
+      updateElements(state.currentProgress);
+    });
+    div.appendChild(cb);
+    const of = state.originalFills[i];
+    if (of) {
+      const dot = document.createElement('span');
+      dot.className = 'fill-dot';
+      dot.style.backgroundColor = of;
+      dot.title = of;
+      div.appendChild(dot);
+    }
+    const label = document.createElement('span');
+    label.textContent = el.tag + ' ' + (i + 1);
+    div.appendChild(label);
+    layerPathList.appendChild(div);
+  });
+}
+
+// ── 文件处理 ────────────────────────────────────────────
+
+function handleFile(file) {
+  if (!file.name.toLowerCase().endsWith('.svg')) {
+    alert('请上传 .svg 文件');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const data = parseSVG(e.target.result);
+    if (!data) {
+      alert('SVG解析失败');
+      return;
+    }
+    state.currentData = data;
+    fullRebuild();
+  };
+  reader.readAsText(file);
+}
+
+// ── 完整重建（render + colors + animation reset） ───────
+
+function fullRebuild() {
+  rebuildPreviewDOM();
+  updateColors();
+  state.playDesired = true;
+  state.paused = false;
+  resetAnimation();
+}
+
+// ── 键盘导航 ────────────────────────────────────────────
+
+function scheduleKeyboardResume() {
+  if (state.keyboardResumeTimer) clearTimeout(state.keyboardResumeTimer);
+  state.keyboardResumeTimer = setTimeout(() => {
+    state.keyboardResumeTimer = null;
+    if (state.playDesired && state.paused) {
+      state.paused = false;
+      const now = performance.now();
+      state.animStart =
+        now - (state.currentProgress * totalCycle()) / state.speedFactor * 1000;
+      state.lastTickTime = 0;
+      document.getElementById('playIcon').innerHTML =
+        '<rect x="5" y="4" width="5" height="16" rx="1"/><rect x="14" y="4" width="5" height="16" rx="1"/>';
+      tick();
+    }
+  }, CONST.KEYBOARD_RESUME_DELAY);
+}
+
+// ── 初始化所有事件 ──────────────────────────────────────
+
+export function initUI() {
+  // DOM refs
+  const uploadFloat = document.getElementById('uploadFloat');
+  const fileInput = document.getElementById('fileInput');
+  const previewArea = document.getElementById('previewArea');
+  const timelineSlider = document.getElementById('timeline');
+  const timeVal = document.getElementById('timeVal');
+  const speedSlider = document.getElementById('speed');
+  const speedVal = document.getElementById('speedVal');
+  const strokeWidthInput = document.getElementById('strokeWidth');
+  const strokeWidthVal = document.getElementById('strokeWidthVal');
+  const bgColorInput = document.getElementById('bgColor');
+  const previewBg = document.getElementById('previewBg');
+  const playPauseBtn = document.getElementById('playPauseBtn');
+  const pasteBtn = document.getElementById('pasteBtn');
+  const pastePanel = document.getElementById('pastePanel');
+  const pasteText = document.getElementById('pasteText');
+  const applyPasteBtn = document.getElementById('applyPaste');
+  const cancelPasteBtn = document.getElementById('cancelPaste');
+  const resetBtn = document.getElementById('resetBtn');
+  const shareBtn = document.getElementById('shareBtn');
+  const dlBtn = document.getElementById('dlBtn');
+  const exportFormat = document.getElementById('exportFormat');
+  const layerBtn = document.getElementById('layerBtn');
+  const layerPanel = document.getElementById('layerPanel');
+  const layerClose = document.getElementById('layerClose');
+  const autoBgCheckPanel = document.getElementById('autoBgCheckPanel');
+  const strokeColorInput = document.getElementById('strokeColor');
+  const fillColorInput = document.getElementById('fillColor');
+  const syncCheckbox = document.getElementById('syncColors');
+  const preserveColorsCheckbox = document.getElementById('preserveColors');
+  const layerHeader = document.getElementById('layerHeader');
+
+  // ── 初始状态 ──────────────────────────────────────────
+  previewBg.style.backgroundColor = state.bgColor;
+  updateColors();
+
+  // ── 上传 ──────────────────────────────────────────────
+  uploadFloat.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files[0]) handleFile(e.target.files[0]);
+  });
+  ['dragenter', 'dragover', 'drop'].forEach((ev) => {
+    previewArea.addEventListener(ev, (e) => e.preventDefault());
+  });
+  previewArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  });
+
+  // ── 时间轴 ────────────────────────────────────────────
+  timelineSlider.addEventListener('input', () => {
+    if (state.keyboardResumeTimer) {
+      clearTimeout(state.keyboardResumeTimer);
+      state.keyboardResumeTimer = null;
+    }
+    state.paused = true;
+    if (state.rafId) cancelAnimationFrame(state.rafId);
+    state.rafId = null;
+    state.currentProgress = parseFloat(timelineSlider.value) / 100;
+    timeVal.textContent = Math.round(state.currentProgress * 100) + '%';
+    updateElements(state.currentProgress);
+  });
+  timelineSlider.addEventListener('change', () => {
+    if (state.playDesired) {
+      state.paused = false;
+      const now = performance.now();
+      const simTime = state.currentProgress * totalCycle();
+      state.animStart = now - (simTime / state.speedFactor) * 1000;
+      state.lastTickTime = 0;
+      tick();
+    } else {
+      state.paused = true;
+    }
+  });
+
+  // ── 速度 ──────────────────────────────────────────────
+  speedSlider.addEventListener('input', () => {
+    state.speedFactor = parseFloat(speedSlider.value);
+    speedVal.textContent = state.speedFactor + '×';
+    if (!state.paused) {
+      const now = performance.now();
+      const simTime = state.currentProgress * totalCycle();
+      state.animStart = now - (simTime / state.speedFactor) * 1000;
+      state.lastTickTime = 0;
+    }
+  });
+
+  // ── 描边宽 ────────────────────────────────────────────
+  strokeWidthInput.addEventListener('input', () => {
+    state.strokeWidth = parseFloat(strokeWidthInput.value);
+    strokeWidthVal.textContent = state.strokeWidth;
+    state.strokeElements.forEach(
+      (el) => (el.style.strokeWidth = state.strokeWidth)
+    );
+  });
+
+  // ── 颜色 ──────────────────────────────────────────────
+  strokeColorInput.addEventListener('input', () => {
+    state.strokeColor = strokeColorInput.value;
+    updateColors();
+  });
+  fillColorInput.addEventListener('input', () => {
+    state.fillColor = fillColorInput.value;
+    state.syncColors = false;
+    syncCheckbox.checked = false;
+    updateColors();
+  });
+  syncCheckbox.addEventListener('change', () => {
+    state.syncColors = syncCheckbox.checked;
+    updateColors();
+  });
+  preserveColorsCheckbox.addEventListener('change', () => {
+    state.preserveOriginalColors = preserveColorsCheckbox.checked;
+    if (state.currentData) fullRebuild();
+    showToast(
+      state.preserveOriginalColors
+        ? '保留原色：开（原始图层顺序）'
+        : '统一颜色：开（面积排序）'
+    );
+  });
+  bgColorInput.addEventListener('input', () => {
+    state.bgColor = bgColorInput.value;
+    previewBg.style.backgroundColor = state.bgColor;
+  });
+
+  // ── 播放/暂停 ─────────────────────────────────────────
+  playPauseBtn.addEventListener('click', () => {
+    if (state.keyboardResumeTimer) {
+      clearTimeout(state.keyboardResumeTimer);
+      state.keyboardResumeTimer = null;
+    }
+    state.playDesired = !state.playDesired;
+    const playIcon = document.getElementById('playIcon');
+    if (state.playDesired) {
+      state.paused = false;
+      const now = performance.now();
+      const simTime = state.currentProgress * totalCycle();
+      state.animStart = now - (simTime / state.speedFactor) * 1000;
+      state.lastTickTime = 0;
+      playIcon.innerHTML =
+        '<rect x="5" y="4" width="5" height="16" rx="1"/><rect x="14" y="4" width="5" height="16" rx="1"/>';
+      tick();
+    } else {
+      state.paused = true;
+      if (state.rafId) cancelAnimationFrame(state.rafId);
+      state.rafId = null;
+      playIcon.innerHTML =
+        '<polygon points="6,4 20,12 6,20" fill="currentColor"/>';
+    }
+  });
+
+  // ── 粘贴 ──────────────────────────────────────────────
+  pasteBtn.addEventListener('click', () => {
+    pastePanel.style.display =
+      pastePanel.style.display === 'flex' ? 'none' : 'flex';
+  });
+  cancelPasteBtn.addEventListener('click', () => {
+    pastePanel.style.display = 'none';
+  });
+  applyPasteBtn.addEventListener('click', () => {
+    const code = pasteText.value.trim();
+    if (!code) return;
+    const data = parseSVG(code);
+    if (!data) {
+      alert('无法解析SVG代码');
+      return;
+    }
+    state.currentData = data;
+    fullRebuild();
+    pastePanel.style.display = 'none';
+    pasteText.value = '';
+  });
+
+  // ── 重置 ──────────────────────────────────────────────
+  resetBtn.addEventListener('click', () => {
+    if (!state.currentData) return;
+    state.strokeWidth = 8;
+    strokeWidthInput.value = 8;
+    strokeWidthVal.textContent = '8';
+    state.strokeColor = '#ffffff';
+    state.fillColor = '#ffffff';
+    state.syncColors = true;
+    syncCheckbox.checked = true;
+    strokeColorInput.value = '#ffffff';
+    fillColorInput.value = '#ffffff';
+    state.bgColor = '#000000';
+    bgColorInput.value = '#000000';
+    previewBg.style.backgroundColor = '#000000';
+    state.speedFactor = 1;
+    speedSlider.value = 1;
+    speedVal.textContent = '1×';
+    state.autoBgEnabled = true;
+    autoBgCheckPanel.checked = true;
+    state.preserveOriginalColors = false;
+    preserveColorsCheckbox.checked = false;
+    fullRebuild();
+    fileInput.value = '';
+    if (state.keyboardResumeTimer) {
+      clearTimeout(state.keyboardResumeTimer);
+      state.keyboardResumeTimer = null;
+    }
+  });
+
+  // ── 图层面板 ──────────────────────────────────────────
+  layerBtn.addEventListener('click', () => {
+    if (layerPanel.style.display === 'flex') {
+      layerPanel.style.display = 'none';
+    } else {
+      if (state.currentData) {
+        renderLayerPathList();
+        autoBgCheckPanel.checked = state.autoBgEnabled;
+      }
+      layerPanel.style.display = 'flex';
+    }
+  });
+  layerClose.addEventListener('click', () => {
+    layerPanel.style.display = 'none';
+  });
+  autoBgCheckPanel.addEventListener('change', () => {
+    const newAutoBg = autoBgCheckPanel.checked;
+    if (newAutoBg === state.autoBgEnabled) return;
+    if (state.preserveOriginalColors) {
+      state.currentData.elements =
+        state.currentData.originalElements || state.currentData.elements;
+    } else if (newAutoBg && state.currentData && state.currentData.elements.length > 1) {
+      state.currentData.elements = sortElementsByArea(
+        state.currentData.elements
+      );
+    }
+    measureAndCacheLengths();
+    reorderDomElements();
+    state.pathStrokeVisible = state.currentData.elements.map(() => true);
+    state.autoBgEnabled = newAutoBg;
+    updateElements(state.currentProgress);
+    renderLayerPathList();
+  });
+
+  // ── 拖动（鼠标+触摸） ─────────────────────────────────
+  let isDragging = false,
+    dragOffX = 0,
+    dragOffY = 0;
+  function dragStart(cx, cy) {
+    isDragging = true;
+    const rect = layerPanel.getBoundingClientRect();
+    dragOffX = cx - rect.left;
+    dragOffY = cy - rect.top;
+    layerHeader.style.cursor = 'grabbing';
+  }
+  function dragMove(cx, cy) {
+    if (!isDragging) return;
+    layerPanel.style.left = cx - dragOffX + 'px';
+    layerPanel.style.top = cy - dragOffY + 'px';
+  }
+  function dragEnd() {
+    if (isDragging) {
+      isDragging = false;
+      layerHeader.style.cursor = 'move';
+    }
+  }
+  layerHeader.addEventListener('mousedown', (e) => {
+    dragStart(e.clientX, e.clientY);
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', (e) => dragMove(e.clientX, e.clientY));
+  document.addEventListener('mouseup', dragEnd);
+  layerHeader.addEventListener(
+    'touchstart',
+    (e) => {
+      dragStart(e.touches[0].clientX, e.touches[0].clientY);
+      e.preventDefault();
+    },
+    { passive: false }
+  );
+  document.addEventListener(
+    'touchmove',
+    (e) => {
+      if (!isDragging) return;
+      dragMove(e.touches[0].clientX, e.touches[0].clientY);
+      e.preventDefault();
+    },
+    { passive: false }
+  );
+  document.addEventListener('touchend', (e) => {
+    if (isDragging) {
+      dragEnd();
+      e.preventDefault();
+    }
+  });
+
+  // ── 键盘 ──────────────────────────────────────────────
+  document.addEventListener('keydown', (e) => {
+    if (
+      e.target.tagName === 'INPUT' ||
+      e.target.tagName === 'TEXTAREA' ||
+      e.target.isContentEditable
+    )
+      return;
+    if (!state.currentData) return;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      if (!state.paused) {
+        state.paused = true;
+        if (state.rafId) {
+          cancelAnimationFrame(state.rafId);
+          state.rafId = null;
+        }
+        document.getElementById('playIcon').innerHTML =
+          '<polygon points="6,4 20,12 6,20" fill="currentColor"/>';
+        scheduleKeyboardResume();
+      }
+      const step = e.shiftKey ? 5 : 1;
+      let newVal = parseFloat(timelineSlider.value);
+      if (e.key === 'ArrowRight') newVal = Math.min(100, newVal + step);
+      else newVal = Math.max(0, newVal - step);
+      timelineSlider.value = newVal;
+      state.currentProgress = newVal / 100;
+      timeVal.textContent = Math.round(newVal) + '%';
+      updateElements(state.currentProgress);
+      if (state.keyboardResumeTimer) scheduleKeyboardResume();
+    }
+  });
+
+  // ── 导出 & 分享 ───────────────────────────────────────
+  shareBtn.addEventListener('click', () => {
+    if (!state.currentData) return;
+    navigator.clipboard
+      .writeText(buildCurrentSnapshotSVG(true))
+      .then(() => showToast('SVG代码已复制'));
+  });
+  dlBtn.addEventListener('click', () => {
+    if (!state.currentData) return;
+    const fmt = exportFormat.value;
+    if (fmt === 'html') exportHTML();
+    else if (fmt === 'svg') exportSVG();
+    else if (fmt === 'png' || fmt === 'jpg') exportImage(fmt);
+  });
+
+  // ── 清理 ──────────────────────────────────────────────
+  window.addEventListener('beforeunload', () => {
+    if (state.rafId) cancelAnimationFrame(state.rafId);
+  });
+
+}

@@ -43,10 +43,10 @@ export function totalCycle(): number {
   return CONST.STROKE_DUR + CONST.FILL_DUR + CONST.PAUSE_TIME;
 }
 
-/** 逐条模式：总时长与同步模式一致，但每条路径平分 stroke 时间 */
+/** 逐条模式：每条路径平分 stroke 时间，最少 0.4s */
 export function perElemStrokeDur(elemCount: number): number {
   if (elemCount <= 1) return CONST.STROKE_DUR;
-  return CONST.STROKE_DUR / elemCount;
+  return Math.max(0.4, CONST.STROKE_DUR / elemCount);
 }
 
 export function elementCycle(elemCount: number): number {

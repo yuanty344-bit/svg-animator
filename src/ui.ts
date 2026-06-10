@@ -190,8 +190,10 @@ export function initUI(): void {
     showToast(state.sequentialMode ? '逐条绘制：开' : '同步绘制：开');
   });
   const staggerSlider = $('staggerFactor') as HTMLInputElement;
+  const staggerVal = $('staggerVal');
   staggerSlider.addEventListener('input', () => {
     state.staggerFactor = parseFloat(staggerSlider.value);
+    staggerVal.textContent = state.staggerFactor + '×';
     if (state.currentData && state.sequentialMode) fullRebuild();
   });
   bgColorInput.addEventListener('input', () => { state.bgColor = bgColorInput.value; previewBg.style.backgroundColor = state.bgColor; });
@@ -242,7 +244,7 @@ export function initUI(): void {
     state.autoBgEnabled = true; autoBgCheckPanel.checked = true;
     state.preserveOriginalColors = false; preserveColorsCheckbox.checked = false;
     state.sequentialMode = false; sequentialCheckbox.checked = false;
-    state.staggerFactor = 1; staggerSlider.value = '1';
+    state.staggerFactor = 1; staggerSlider.value = '1'; staggerVal.textContent = '1×';
     fullRebuild();
     fileInput.value = '';
     if (state.keyboardResumeTimer) { clearTimeout(state.keyboardResumeTimer); state.keyboardResumeTimer = null; }

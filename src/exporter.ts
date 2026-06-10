@@ -66,13 +66,12 @@ export function exportHTML(): void {
     const delay = stagger * i;
     const strokeSec = perElemStroke.toFixed(2);
     pairs += `\n    <${el.tag} ${a} class="ap" style="--l:${len}px;--d:${delay.toFixed(2)}s;--s:${strokeSec}"/>`;
+    const customFill = state.customFills[i];
     const origFill = state.originalFills[i];
-    const ft =
-      state.preserveOriginalColors && origFill
-        ? origFill
-        : state.preserveOriginalColors
-          ? 'transparent'
-          : state.fillColor;
+    const ft = customFill
+      || (state.preserveOriginalColors && origFill ? origFill
+        : state.preserveOriginalColors ? 'transparent'
+        : state.fillColor);
     pairs += `\n    <${el.tag} ${a} class="fill-el" style="--fc:${escHtml(ft)};--d:${delay.toFixed(2)}s;--s:${strokeSec}"/>`;
   });
 

@@ -299,6 +299,14 @@ export function initUI(): void {
     }
   });
   $('layerClose').addEventListener('click', () => { layerPanel.style.display = 'none'; });
+  const resetPathColorsBtn = document.getElementById('resetPathColors')!;
+  resetPathColorsBtn.addEventListener('click', () => {
+    state.customFills = state.originalFills.map(() => null);
+    updateElements(state.currentProgress);
+    renderLayerPathList();
+    showToast('路径颜色已重置');
+  });
+
   autoBgCheckPanel.addEventListener('change', () => {
     const newAutoBg = autoBgCheckPanel.checked;
     if (newAutoBg === state.autoBgEnabled) return;

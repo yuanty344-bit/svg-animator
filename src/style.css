@@ -25,16 +25,16 @@ body{
 .upload-float{
   position:absolute;top:12px;left:50%;transform:translateX(-50%);
   display:flex;align-items:center;gap:8px;
-  background:rgba(20,20,20,.85);backdrop-filter:blur(10px);
-  border-radius:24px;padding:8px 18px;border:1px solid rgba(255,255,255,.15);
-  cursor:pointer;transition:.3s;z-index:2;font-size:13px;opacity:.9;
+  background:rgba(20,20,20,.92);border-radius:24px;padding:8px 18px;
+  border:1px solid rgba(255,255,255,.15);
+  cursor:pointer;transition:opacity .3s;z-index:2;font-size:13px;opacity:.9;
 }
 .upload-float:hover{border-color:rgba(255,255,255,.5);opacity:1}
 .upload-float svg{width:18px;height:18px;opacity:.7}
 .upload-float input{display:none}
 .control-bar{
   border-top:1px solid rgba(255,255,255,.1);
-  background:rgba(255,255,255,.03);backdrop-filter:blur(12px);
+  background:rgba(255,255,255,.03);
   display:flex;align-items:center;justify-content:center;gap:20px;
   padding:12px 24px;flex-wrap:wrap;
   max-height:45vh;overflow-y:auto;

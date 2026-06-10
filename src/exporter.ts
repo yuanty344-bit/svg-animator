@@ -80,8 +80,8 @@ export function exportHTML(): void {
 
   // 描边动画 CSS：保留描边时不加 fadeOut
   const apAnim = keepStrokes
-    ? `animation:d ${strokeDur}s ease-in-out forwards`
-    : `animation:d ${strokeDur}s ease-in-out forwards,fadeOut ${CONST.FILL_DUR}s ease-in-out forwards ${strokeDur}s`;
+    ? `animation:d ${strokeDur}s linear forwards`
+    : `animation:d ${strokeDur}s linear forwards,fadeOut ${CONST.FILL_DUR}s linear forwards ${strokeDur}s`;
   const fadeOutCss = keepStrokes ? '' : `@keyframes fadeOut{to{stroke-opacity:0}}`;
 
   const html =
@@ -92,7 +92,7 @@ export function exportHTML(): void {
     `.ap{fill:transparent;stroke:${escHtml(state.strokeColor)};stroke-width:${state.strokeWidth};` +
     `stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:var(--l);stroke-dashoffset:var(--l);` +
     `${apAnim};animation-delay:var(--d)}\n` +
-    `.fill-el{fill:transparent;stroke:none;animation:fadeIn ${CONST.FILL_DUR}s ease-in-out forwards ${strokeDur}s;animation-delay:var(--d)}\n` +
+    `.fill-el{fill:transparent;stroke:none;animation:fadeIn ${CONST.FILL_DUR}s linear forwards ${strokeDur}s;animation-delay:var(--d)}\n` +
     `@keyframes d{to{stroke-dashoffset:0}}\n` +
     `${fadeOutCss}` +
     `@keyframes fadeIn{to{${fillCss}}}\n</style></head><body>` +
@@ -105,10 +105,10 @@ export function exportHTML(): void {
     `void document.querySelector("svg").offsetWidth;` +
     `s.forEach(function(p){var d=p.style.getPropertyValue("--s")||"${CONST.STROKE_DUR}";` +
     (keepStrokes
-      ? `p.style.animation="d "+d+"s ease-in-out forwards";`
-      : `p.style.animation="d "+d+"s ease-in-out forwards, fadeOut ${CONST.FILL_DUR}s ease-in-out forwards "+d+"s";`) +
+      ? `p.style.animation="d "+d+"s linear forwards";`
+      : `p.style.animation="d "+d+"s linear forwards, fadeOut ${CONST.FILL_DUR}s linear forwards "+d+"s";`) +
     `});` +
-    `f.forEach(function(p){var d=p.style.getPropertyValue("--s")||"${CONST.STROKE_DUR}";p.style.animation="fadeIn ${CONST.FILL_DUR}s ease-in-out forwards "+d+"s";});}` +
+    `f.forEach(function(p){var d=p.style.getPropertyValue("--s")||"${CONST.STROKE_DUR}";p.style.animation="fadeIn ${CONST.FILL_DUR}s linear forwards "+d+"s";});}` +
     `reset();setInterval(reset,${cycleMs});})();\n<\/script></body></html>`;
 
   downloadBlob(URL.createObjectURL(new Blob([html], { type: 'text/html' })), 'animation.html');

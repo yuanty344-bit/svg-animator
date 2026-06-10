@@ -130,9 +130,8 @@ export function initUI(): void {
 
   // ── 上传 ──────────────────────────────────────────────
   $('uploadFloat').addEventListener('click', () => {
-    // 暂停动画释放主线程，避免 RAF 循环阻塞文件对话框弹出
     if (!state.paused) { state.paused = true; syncPlayIcon(); }
-    setTimeout(() => fileInput.click(), 30);
+    fileInput.click();
   });
   fileInput.addEventListener('change', (e) => {
     const f = (e.target as HTMLInputElement).files?.[0];

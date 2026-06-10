@@ -22,16 +22,15 @@ body{
   padding:2%;
   box-sizing:border-box;
 }
-.upload-float{
-  position:absolute;top:8px;left:50%;transform:translateX(-50%);
-  display:flex;align-items:center;gap:8px;
-  background:rgba(20,20,20,.92);border-radius:24px;padding:8px 18px;
-  border:1px solid rgba(255,255,255,.15);
-  cursor:pointer;transition:opacity .3s;z-index:2;font-size:13px;opacity:.9;
+.upload-inline{
+  display:flex;align-items:center;gap:5px;
+  background:rgba(255,255,255,.08);border-radius:6px;padding:4px 10px;
+  border:1px solid rgba(255,255,255,.12);
+  cursor:pointer;transition:.2s;font-size:11px;opacity:.85;flex-shrink:0;
 }
-.upload-float:hover{border-color:rgba(255,255,255,.5);opacity:1}
-.upload-float svg{width:18px;height:18px;opacity:.7}
-.upload-float input{display:none}
+.upload-inline:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3);opacity:1}
+.upload-inline svg{width:15px;height:15px;opacity:.7}
+.upload-inline input{display:none}
 /* 共用控件 */
 .ctrl-group{display:flex;align-items:center;gap:6px;font-size:12px;opacity:.8}
 .ctrl-group label{opacity:.6;white-space:nowrap;font-size:11px}
@@ -173,5 +172,5 @@ input[type=color]::-webkit-color-swatch{border-radius:3px;border:1px solid rgba(
   .top-bar .bar-row{gap:6px}
   .bottom-bar{gap:8px;padding:6px 10px}
   .ctrl-group input[type=range]{width:60px}
-  .upload-float{top:40px;padding:5px 12px;font-size:11px}
+  .upload-inline{padding:3px 8px;font-size:10px}
 }

@@ -9,6 +9,13 @@
 <!-- 顶部栏：配置层 -->
 <div class="top-bar" id="topBar">
   <div class="bar-row">
+    <!-- 组0：上传 -->
+    <div class="upload-inline" id="uploadFloat">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+      <span>上传 SVG</span>
+      <input type="file" id="fileInput" accept=".svg">
+    </div>
+    <span class="bar-sep"></span>
     <!-- 组1：颜色 -->
     <span class="bar-label">描边</span><input type="color" id="strokeColor" value="#ffffff" title="描边颜色">
     <span class="bar-label">填色</span><input type="color" id="fillColor" value="#ffffff" title="填色颜色">
@@ -37,11 +44,6 @@
 <div class="preview-area" id="previewArea">
   <div class="preview-bg" id="previewBg">
     <svg id="previewSvg" viewBox="0 0 1024 1024"></svg>
-  </div>
-  <div class="upload-float" id="uploadFloat">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
-    <span>上传 SVG</span>
-    <input type="file" id="fileInput" accept=".svg">
   </div>
 </div>
 

@@ -35,9 +35,15 @@
       <option value="ease-in-out">缓入缓出</option>
     </select>
     <span class="bar-sep"></span>
-    <button class="mini-btn" id="presetFast" title="快速预览">⚡快速</button>
-    <button class="mini-btn" id="presetStd" title="标准展示">▶标准</button>
-    <button class="mini-btn" id="presetFilm" title="电影级慢速">🎬电影</button>
+    <button class="mini-btn" id="presetFast" title="快速预览">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>快速
+    </button>
+    <button class="mini-btn" id="presetStd" title="标准展示">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5,3 19,12 5,21"/></svg>标准
+    </button>
+    <button class="mini-btn" id="presetFilm" title="电影级慢速">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 2v20M17 2v20M2 7h5M2 17h5M17 7h5M17 17h5"/></svg>电影
+    </button>
     <span class="bar-sep"></span>
     <!-- 组3：背景 -->
     <span class="bar-label">背景</span><input type="color" id="bgColor" value="#000000" title="背景颜色">
@@ -49,7 +55,7 @@
     <span class="bar-sep"></span>
     <!-- 组5：导出 -->
     <div class="icon-btn" id="shareBtn" title="复制当前画面SVG代码"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.7 13.7l6.6 3.3M15.3 5.3l-6.6 3.3" stroke-linecap="round"/></svg><span class="icon-label">分享</span></div>
-    <select id="exportFormat" class="export-select"><option value="html">HTML 动画</option><option value="svg">SVG 快照</option><option value="png">PNG 快照</option><option value="jpg">JPG 快照</option></select>
+    <select id="exportFormat" class="export-select"><option value="html">HTML</option><option value="svg">SVG</option><option value="png">PNG</option><option value="jpg">JPG</option></select>
     <button class="text-btn" id="dlBtn">⬇ 下载</button>
   </div>
 </div>

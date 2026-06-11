@@ -1,4 +1,11 @@
-// ── DOM 构建 ──────────────────────────────────────────
+/**
+ * DOM 构建 — 将解析后的 SVG 数据渲染为预览区 DOM
+ *
+ * 关键函数：
+ *   rebuildPreviewDOM() — 完整重建
+ *   reorderDomElements() — 不重建数据，仅重构 DOM
+ *   createElementPair() — 创建描边+填充元素对
+ */
 
 import type { SVGElementData } from '../state/types.js';
 import { state } from '../state/store.js';

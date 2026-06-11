@@ -1,4 +1,9 @@
-// ── UI 事件 & 图层面板 ──────────────────────────────────
+/**
+ * UI 事件 & 图层面板 — 所有用户交互的入口
+ *
+ * initUI() 绑定所有事件，是应用启动入口
+ * 包含：上传、时间轴、速度、颜色、预设、图层、键盘、导出
+ */
 
 import { state, CONST, totalCycle, elementCycle } from '../state/store.js';
 import { parseSVG } from '../core/parser.js';

@@ -1,4 +1,11 @@
-// ── 动画引擎 ──────────────────────────────────────────
+/**
+ * 动画引擎 — requestAnimationFrame 循环 + 每帧更新
+ *
+ * 核心函数：
+ *   tick() — RAF 循环入口
+ *   updateElements(progress) — 根据进度更新所有描边/填充状态
+ *   updateColors() — 颜色变更时重新渲染
+ */
 
 import { state, CONST, totalCycle, elementCycle, perElemStrokeDur } from '../state/store.js';
 import { getLength } from './renderer.js';

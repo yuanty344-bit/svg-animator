@@ -1,4 +1,9 @@
-// ── 导出功能 ──────────────────────────────────────────
+/**
+ * 导出功能 — 所有格式的导出逻辑
+ *
+ * 支持格式：HTML（完整动画）、SVG（当前快照）、PNG、JPG
+ * HTML 导出包含独立 CSS 动画 + JS 循环，可脱离主项目运行
+ */
 
 import { state, CONST, totalCycle, elementCycle, perElemStrokeDur } from '../state/store.js';
 import { escHtml, parseViewBoxParts } from '../utils/helpers.js';

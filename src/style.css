@@ -173,9 +173,21 @@ input[type=color]::-webkit-color-swatch{border-radius:3px;border:1px solid rgba(
 }
 .paste-panel .row{display:flex;gap:8px;justify-content:flex-end}
 @media(max-width:768px){
-  .top-bar{padding:4px 8px}
-  .top-bar .bar-row{gap:6px}
-  .bottom-bar{gap:8px;padding:6px 10px}
-  .ctrl-group input[type=range]{width:60px}
-  .upload-inline{padding:3px 8px;font-size:10px}
+  .top-bar{padding:4px 6px}
+  .top-bar .bar-row{gap:5px;font-size:10px}
+  .top-bar .bar-label{display:none}
+  .top-bar .icon-btn{width:auto;height:22px;padding:0 5px}
+  .top-bar .export-select{padding:3px 6px;font-size:10px}
+  .top-bar .text-btn{padding:4px 8px;font-size:10px}
+  .bar-sep{margin:0 2px}
+  .bottom-bar{gap:6px;padding:5px 8px}
+  .ctrl-group input[type=range]{width:50px}
+  .ctrl-group{font-size:10px}
+  .upload-inline{padding:3px 8px;font-size:9px}
+  .easing-select{font-size:9px;padding:2px 4px}
+}
+@media(max-width:480px){
+  .top-bar .sync-inline{font-size:9px}
+  .bottom-bar{gap:4px;padding:4px 6px}
+  .timeline-wrap .val{min-width:28px}
 }

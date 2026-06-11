@@ -170,9 +170,9 @@ describe('sortElementsByArea with mock', () => {
       originalElements: [],
     };
     // Mock on the Element prototype (jsdom uses this)
-    const orig = Element.prototype.getBBox as any;
+    const orig = (Element.prototype as any).getBBox;
     let callCount = 0;
-    Element.prototype.getBBox = function() {
+    (Element.prototype as any).getBBox = function() {
       callCount++;
       return callCount === 1
         ? { x: 0, y: 0, width: 10, height: 10 }
@@ -184,7 +184,7 @@ describe('sortElementsByArea with mock', () => {
       expect(sorted[0].originalFill).toBe('#222');
       expect(sorted[1].originalFill).toBe('#111');
     } finally {
-      Element.prototype.getBBox = orig;
+      (Element.prototype as any).getBBox = orig;
     }
   });
 });

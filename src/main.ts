@@ -1,5 +1,5 @@
 import './style.css';
-import { initUI } from './ui.js';
+import { initUI } from './ui/controls.js';
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initUI);

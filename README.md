@@ -28,16 +28,21 @@ npm run build      # 输出 dist/index.html，双击即用
 
 ```
 src/
-├── main.ts          # 入口
-├── style.css        # 样式
-├── types.ts         # TypeScript 类型
-├── state.ts         # 全局状态 & 常量
-├── utils.ts         # 纯工具函数
-├── parser.ts        # SVG 解析
-├── renderer.ts      # DOM 构建
-├── animator.ts      # 动画引擎（含逐条绘制）
-├── exporter.ts      # 导出（HTML/SVG/PNG/JPG）
-└── ui.ts            # 事件绑定 & 图层面板
+├── core/
+│   ├── parser.ts         # SVG 解析
+│   ├── renderer.ts       # DOM 构建
+│   └── animator.ts       # 动画引擎
+├── ui/
+│   └── controls.ts       # 事件绑定 & 图层面板
+├── export/
+│   └── exporter.ts       # 导出（HTML/SVG/PNG/JPG）
+├── state/
+│   ├── store.ts          # 全局状态 & 常量
+│   └── types.ts          # TypeScript 类型
+├── utils/
+│   └── helpers.ts        # 纯工具函数
+├── main.ts               # 入口
+└── style.css             # 样式
 ```
 
 ## 技术栈

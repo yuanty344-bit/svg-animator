@@ -1,7 +1,7 @@
 // ── SVG 解析 ────────────────────────────────────────────
 
-import type { SVGElementData, ParsedSVG } from './types.js';
-import { normalizeViewBox, parseColor } from './utils.js';
+import type { SVGElementData, ParsedSVG } from '../state/types.js';
+import { normalizeViewBox, parseColor } from '../utils/helpers.js';
 
 const SKIP_ATTRS = new Set([
   'stroke', 'stroke-width', 'style', 'class', 'id',

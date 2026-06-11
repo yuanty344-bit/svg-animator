@@ -1,8 +1,8 @@
 // ── 导出功能 ──────────────────────────────────────────
 
-import { state, CONST, totalCycle, elementCycle, perElemStrokeDur } from './state.js';
-import { escHtml, parseViewBoxParts } from './utils.js';
-import { getLength } from './renderer.js';
+import { state, CONST, totalCycle, elementCycle, perElemStrokeDur } from '../state/store.js';
+import { escHtml, parseViewBoxParts } from '../utils/helpers.js';
+import { getLength } from '../core/renderer.js';
 
 export function buildCurrentSnapshotSVG(includeBg: boolean): string {
   if (!state.currentData || state.strokeElements.length === 0) return '';

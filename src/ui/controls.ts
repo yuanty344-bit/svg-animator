@@ -1,10 +1,10 @@
 // ── UI 事件 & 图层面板 ──────────────────────────────────
 
-import { state, CONST, totalCycle, elementCycle } from './state.js';
-import { parseSVG } from './parser.js';
-import { rebuildPreviewDOM, reorderDomElements, measureAndCacheLengths } from './renderer.js';
-import { updateColors, updateElements, invalidateFillCache, resetAnimation, tick } from './animator.js';
-import { buildCurrentSnapshotSVG, exportHTML, exportSVG, exportImage, showToast } from './exporter.js';
+import { state, CONST, totalCycle, elementCycle } from '../state/store.js';
+import { parseSVG } from '../core/parser.js';
+import { rebuildPreviewDOM, reorderDomElements, measureAndCacheLengths } from '../core/renderer.js';
+import { updateColors, updateElements, invalidateFillCache, resetAnimation, tick } from '../core/animator.js';
+import { buildCurrentSnapshotSVG, exportHTML, exportSVG, exportImage, showToast } from '../export/exporter.js';
 
 // ── 图层面板 ────────────────────────────────────────────
 

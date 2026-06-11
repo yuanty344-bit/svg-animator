@@ -1,8 +1,8 @@
 // ── 动画引擎 ──────────────────────────────────────────
 
-import { state, CONST, totalCycle, elementCycle, perElemStrokeDur } from './state.js';
+import { state, CONST, totalCycle, elementCycle, perElemStrokeDur } from '../state/store.js';
 import { getLength } from './renderer.js';
-import { hexToRgb, applyEasing } from './utils.js';
+import { hexToRgb, applyEasing } from '../utils/helpers.js';
 
 function getFillRgb() {
   if (state.cachedFillRgb && state.cachedFillHex === state.fillColor)

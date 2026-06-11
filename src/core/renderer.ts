@@ -1,8 +1,8 @@
 // ── DOM 构建 ──────────────────────────────────────────
 
-import type { SVGElementData } from './types.js';
-import { state } from './state.js';
-import { withTempSVG, parseViewBoxParts } from './utils.js';
+import type { SVGElementData } from '../state/types.js';
+import { state } from '../state/store.js';
+import { withTempSVG, parseViewBoxParts } from '../utils/helpers.js';
 
 export function measureAndCacheLengths(): number[] {
   if (!state.currentData) return [];

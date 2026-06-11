@@ -1,6 +1,6 @@
 // ── 纯工具函数 ──────────────────────────────────────────
 
-import type { RGB } from './types.js';
+import type { RGB } from '../state/types.js';
 
 export function escHtml(str: string): string {
   return String(str)

@@ -51,3 +51,12 @@ describe('normalizeViewBox', () => {
   it('handles extra spaces', () => expect(normalizeViewBox('0   0   1024   1024')).toBe('0 0 1024 1024'));
   it('passes through clean input', () => expect(normalizeViewBox('0 0 1024 1024')).toBe('0 0 1024 1024'));
 });
+
+describe('parseColor edge cases', () => {
+  it('handles whitespace', () => expect(parseColor('  #ff0000  ')).toBe('#ff0000'));
+  it('handles uppercase NONE', () => expect(parseColor('NONE')).toBeNull());
+  it('handles 3-char hex', () => {
+    expect(parseColor('#abc')).toBe('#aabbcc');
+  });
+});
+

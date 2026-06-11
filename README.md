@@ -10,44 +10,81 @@
 npm install
 npm run dev        # 开发模式，热更新
 npm run build      # 输出 dist/index.html，双击即用
+npm test           # 运行 80 项单元测试
 ```
 
-在线试用：打开 [dist/index.html](dist/index.html)，拖入 `dist/svg/` 下的示例 SVG。
+直接使用：打开 [dist/index.html](dist/index.html)，拖入 `dist/svg/` 下的示例 SVG。
 
-## 功能
+## 完整功能
 
-| 分类 | 功能 |
-|------|------|
-| 动画 | 描边逐笔绘制、逐条绘制（可配间隔）、速度控制、保留/消退描边 |
-| 颜色 | 描边色/填色独立调节、颜色同步、保留原色（自动处理 `fill=""` 等边界情况） |
-| 导出 | HTML（完整动画）、SVG（当前画面快照）、PNG / JPG |
-| 交互 | 时间轴拖拽、← → 逐帧微调（Shift 加速）、800ms 无操作自动恢复播放 |
-| 工具 | 粘贴 SVG 代码、拖放上传、图层独立开关、图层面板拖动（支持触摸） |
+| 分类 | 功能 | 说明 |
+|------|------|------|
+| **动画** | 描边逐笔绘制 | stroke-dasharray 动画，所有路径一笔笔画出来 |
+| | 逐条绘制 | 路径一根接一根画，间隔可调（0.5×–3×） |
+| | 速度控制 | 0.25×–4× 变速播放 |
+| | 保留/消退描边 | 动画结束后描边保留或淡出 |
+| | 缓动曲线 | 线性 / 缓入 / 缓出 / 缓入缓出 |
+| | 动画预设 | ⚡快速 / ▶标准 / 🎬电影 一键切换参数 |
+| **颜色** | 描边色 & 填色 | 独立取色器 |
+| | 颜色同步 | 填色跟随描边或独立设置 |
+| | 保留原色 | 恢复 SVG 原始配色，自动处理 `fill=""`→黑、无 fill→黑 |
+| | 背景色 | 预览区背景颜色 |
+| **图层** | 独立开关 | 每条路径单独控制可见性 |
+| | 逐路径颜色 | 图层面板里给每条路径单独调色 |
+| | 拖动画板 | 图层面板支持鼠标和触摸拖动 |
+| | 重置颜色 | 一键清除所有自定义路径颜色 |
+| **导出** | HTML | 完整动画网页，双击即用 |
+| | SVG | 当前画面快照 |
+| | PNG / JPG | 当前画面截图 |
+| **交互** | 时间轴 | 拖拽跳转，键盘 ← → 逐帧微调（Shift 加速） |
+| | 自动恢复 | 键盘操作后 800ms 无操作自动恢复播放 |
+| | 拖放上传 | 直接拖 SVG 文件到预览区 |
+| | 粘贴 SVG | 粘贴 SVG 代码 |
 
 ## 项目结构
 
 ```
 src/
-├── core/
-│   ├── parser.ts         # SVG 解析
-│   ├── renderer.ts       # DOM 构建
-│   └── animator.ts       # 动画引擎
-├── ui/
-│   └── controls.ts       # 事件绑定 & 图层面板
-├── export/
-│   └── exporter.ts       # 导出（HTML/SVG/PNG/JPG）
-├── state/
-│   ├── store.ts          # 全局状态 & 常量
-│   └── types.ts          # TypeScript 类型
-├── utils/
-│   └── helpers.ts        # 纯工具函数
-├── main.ts               # 入口
-└── style.css             # 样式
+├── core/              # 核心引擎
+│   ├── parser.ts      # SVG 解析（fill 处理、嵌套组、6种几何标签）
+│   ├── renderer.ts    # DOM 构建（measureAndCache、sortByArea、createElementPair）
+│   └── animator.ts    # 动画引擎（RAF 循环、逐帧更新、缓动、逐条时序）
+├── ui/                # 界面层
+│   └── controls.ts    # 所有事件绑定 & 图层面板逻辑
+├── export/            # 导出
+│   └── exporter.ts    # HTML 动画 / SVG 快照 / PNG / JPG
+├── state/             # 状态管理
+│   ├── store.ts       # 全局状态（30+ 变量）+ 常量
+│   └── types.ts       # TypeScript 类型定义
+├── utils/             # 工具
+│   └── helpers.ts     # escHtml / hexToRgb / parseColor / applyEasing / withTempSVG
+├── main.ts            # 入口
+└── style.css          # 样式（双栏布局 + 图层面板 + 响应式）
+```
+
+## 测试
+
+```bash
+npm test              # vitest + jsdom，80 项测试
+```
+
+```
+tests/
+├── parser.test.ts    # SVG 解析（fill 边界、嵌套组、style、6种标签）
+├── utils.test.ts     # 工具函数（escHtml / hexToRgb / applyEasing / parseColor）
+├── state.test.ts     # 状态计算（totalCycle / perElemStrokeDur / elementCycle）
+├── renderer.test.ts  # DOM 构建（createElementPair）
+├── animator.test.ts  # 动画引擎（描边/消退/逐条/保留原色/customFills）
+├── exporter.test.ts  # 快照（SVG 有效性、背景、样式）
+├── ui.test.ts        # UI 层（图层列表、颜色显示、preserve 模式）
+└── edge.test.ts      # 边界情况（updateColors / sortByArea mock / 嵌套组）
 ```
 
 ## 技术栈
 
-- TypeScript（strict）+ Vite
-- vite-plugin-singlefile → 构建为单 HTML
+- TypeScript（strict mode，0 错误）
+- Vite + vite-plugin-singlefile → 构建为单 HTML
+- Vitest + jsdom → 单元测试
+- Husky → pre-commit 自动跑测试
 - SVG stroke-dasharray 动画
-- 无框架依赖
+- 零框架依赖

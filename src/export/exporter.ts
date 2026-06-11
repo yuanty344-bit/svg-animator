@@ -3,7 +3,6 @@
 import { state, CONST, totalCycle, elementCycle, perElemStrokeDur } from '../state/store.js';
 import { escHtml, parseViewBoxParts } from '../utils/helpers.js';
 import { getLength } from '../core/renderer.js';
-import { updateElements } from '../core/animator.js';
 
 export function buildCurrentSnapshotSVG(includeBg: boolean): string {
   if (!state.currentData || state.strokeElements.length === 0) return '';
@@ -169,77 +168,6 @@ export function exportImage(format: 'png' | 'jpg'): void {
   img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr);
 }
 
-// ── 导出 GIF / 动画 ─────────────────────────────────────
-
-export function exportGIF(): void {
-  if (!state.currentData || state.strokeElements.length === 0) return;
-  const previewSvg = document.getElementById('previewSvg')!;
-  const vb = parseViewBoxParts(state.currentData.viewBox);
-  const [, , vw, vh] = vb;
-  const maxDim = 400;
-  const scale = Math.min(1, maxDim / Math.max(vw, vh));
-  const w = Math.round(vw * scale);
-  const h = Math.round(vh * scale);
-
-  const canvas = document.createElement('canvas');
-  canvas.width = w; canvas.height = h;
-  const ctx = canvas.getContext('2d')!;
-
-  const savedPaused = state.paused;
-  const savedProgress = state.currentProgress;
-  state.paused = true;
-
-  const cycleDuration = state.sequentialMode
-    ? elementCycle(state.strokeElements.length)
-    : totalCycle();
-  const fps = 10;
-  const totalFrames = Math.round(cycleDuration * fps);
-  const frameDelay = 1000 / fps;
-
-  const chunks: Blob[] = [];
-  const recorder = new MediaRecorder(canvas.captureStream(fps), {
-    mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
-      ? 'video/webm;codecs=vp9' : 'video/webm',
-    videoBitsPerSecond: 3000000
-  });
-  recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
-  recorder.onstop = () => {
-    const blob = new Blob(chunks, { type: 'video/webm' });
-    downloadBlob(URL.createObjectURL(blob), 'animation.webm');
-    state.paused = savedPaused;
-    state.currentProgress = savedProgress;
-    updateElements(state.currentProgress);
-    showToast('动画已下载 (WebM)');
-  };
-
-  let frame = 0;
-  recorder.start();
-
-  function renderNext() {
-    if (frame >= totalFrames) {
-      recorder.stop();
-      return;
-    }
-    updateElements(frame / totalFrames);
-    const svgHtml = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' +
-      state.currentData!.viewBox + '" width="' + w + '" height="' + h + '">' +
-      '<rect width="100%" height="100%" fill="' + escHtml(state.bgColor) + '"/>' +
-      previewSvg.innerHTML + '</svg>';
-
-    const img = new Image();
-    const done = () => {
-      ctx.fillStyle = state.bgColor;
-      ctx.fillRect(0, 0, w, h);
-      ctx.drawImage(img, 0, 0);
-      frame++;
-      setTimeout(renderNext, frameDelay);
-    };
-    img.onload = done;
-    img.onerror = done; // Don't crash on error, just skip frame
-    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgHtml);
-  }
-  renderNext();
-}
 
 let toastTimer: number | null = null;
 function showToast(msg: string): void {

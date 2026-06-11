@@ -4,7 +4,7 @@ import { state, CONST, totalCycle, elementCycle } from '../state/store.js';
 import { parseSVG } from '../core/parser.js';
 import { rebuildPreviewDOM, reorderDomElements, measureAndCacheLengths } from '../core/renderer.js';
 import { updateColors, updateElements, invalidateFillCache, resetAnimation, tick } from '../core/animator.js';
-import { buildCurrentSnapshotSVG, exportHTML, exportSVG, exportImage, showToast } from '../export/exporter.js';
+import { buildCurrentSnapshotSVG, exportHTML, exportSVG, exportImage, exportGIF, showToast } from '../export/exporter.js';
 
 // ── 图层面板 ────────────────────────────────────────────
 
@@ -222,6 +222,28 @@ export function initUI(): void {
     state.easing = easingSelect.value;
     updateElements(state.currentProgress);
   });
+
+  // ── 动画预设 ──────────────────────────────────────────
+  type PresetName = 'fast' | 'standard' | 'film';
+  const presets: Record<PresetName, { speed: number; strokeWidth: number; stagger: number; label: string }> = {
+    fast:     { speed: 3,   strokeWidth: 4,  stagger: 0.5, label: '快速' },
+    standard: { speed: 1,   strokeWidth: 8,  stagger: 1,   label: '标准' },
+    film:     { speed: 0.5, strokeWidth: 12, stagger: 1.5, label: '电影' },
+  };
+  const applyPreset = (name: PresetName) => {
+    const p = presets[name];
+    state.speedFactor = p.speed; (speedSlider as HTMLInputElement).value = String(p.speed); speedVal.textContent = p.speed + '×';
+    state.strokeWidth = p.strokeWidth; strokeWidthInput.value = String(p.strokeWidth); strokeWidthVal.textContent = String(p.strokeWidth);
+    state.staggerFactor = p.stagger; (staggerSlider as HTMLInputElement).value = String(p.stagger); staggerVal.textContent = p.stagger + '×';
+    state.strokeElements.forEach(el => el.style.strokeWidth = String(p.strokeWidth));
+    if (!state.paused) { const now = performance.now(); const cd = state.sequentialMode ? elementCycle(state.strokeElements.length) : totalCycle(); state.animStart = now - (state.currentProgress * cd) / p.speed * 1000; state.lastTickTime = 0; }
+    updateElements(state.currentProgress);
+    showToast('预设：' + p.label);
+  };
+  $('presetFast').addEventListener('click', () => applyPreset('fast'));
+  $('presetStd').addEventListener('click', () => applyPreset('standard'));
+  $('presetFilm').addEventListener('click', () => applyPreset('film'));
+
   const staggerSlider = $('staggerFactor') as HTMLInputElement;
   const staggerVal = $('staggerVal');
   staggerSlider.addEventListener('input', () => {
@@ -375,6 +397,7 @@ export function initUI(): void {
     const fmt = ($('exportFormat') as HTMLSelectElement).value;
     if (fmt === 'html') exportHTML();
     else if (fmt === 'svg') exportSVG();
+    else if (fmt === 'gif') exportGIF();
     else if (fmt === 'png' || fmt === 'jpg') exportImage(fmt as 'png' | 'jpg');
   });
 

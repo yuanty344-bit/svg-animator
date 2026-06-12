@@ -8,7 +8,7 @@
 import { state, CONST, totalCycle, elementCycle, perElemStrokeDur } from '../state/store.js';
 import { escHtml, parseViewBoxParts } from '../utils/helpers.js';
 import { getLength } from '../core/renderer.js';
-import { getParticleCount } from '../core/particles.js';
+import { getParticleCount, renderParticles } from '../core/particles.js';
 
 export function buildCurrentSnapshotSVG(includeBg: boolean): string {
   if (!state.currentData || state.strokeElements.length === 0) return '';
@@ -185,16 +185,39 @@ export function exportParticleVideo(): void {
   const cycleS = state.sequentialMode ? elementCycle(n) : totalCycle();
   const durationMs = Math.round(cycleS * 1000 / state.speedFactor);
 
+  // 保存状态，强制从头开始
+  const savedPaused = state.paused;
+  const savedProgress = state.currentProgress;
+  state.paused = true;
+  state.currentProgress = 0;
+
+  // 渲染第一帧（进度0 = 空画布）
+  renderParticles(cvs);
+
   const stream = cvs.captureStream(15);
   const chunks: Blob[] = [];
   const rec = new MediaRecorder(stream, { mimeType: 'video/webm', videoBitsPerSecond: 3000000 });
   rec.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
   rec.onstop = () => {
+    state.paused = savedPaused;
+    state.currentProgress = savedProgress;
     downloadBlob(URL.createObjectURL(new Blob(chunks, { type: 'video/webm' })), 'particles.webm');
     showToast('粒子视频已下载 (' + (durationMs/1000).toFixed(1) + 's)');
   };
+
   rec.start();
-  setTimeout(() => rec.stop(), durationMs);
+
+  // 逐帧推进：RAF 更新 progress → 渲染 → 一帧不落地录制完整循环
+  const startTime = performance.now();
+  function recordFrame() {
+    const elapsed = (performance.now() - startTime) / 1000;
+    const rawProgress = (elapsed * state.speedFactor) / cycleS;
+    if (rawProgress >= 1) { rec.stop(); return; }
+    state.currentProgress = rawProgress % 1;
+    renderParticles(cvs);
+    requestAnimationFrame(recordFrame);
+  }
+  recordFrame();
 }
 
 let toastTimer: number | null = null;

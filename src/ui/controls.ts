@@ -229,21 +229,28 @@ export function initUI(): void {
     state.particleMode = particleCheckbox.checked;
     const svg = $('previewSvg');
     if (state.particleMode) {
-      svg.style.display = 'block';  // SVG stays for path sampling
+      svg.style.display = 'none';
       particleCanvas.style.display = 'block';
-      particleCanvas.style.position = 'absolute';
-      particleCanvas.style.top = '0';
-      particleCanvas.style.left = '0';
       const bg = $('previewBg');
       const rect = bg.getBoundingClientRect();
-      particleCanvas.width = rect.width * 2;
-      particleCanvas.height = rect.height * 2;
-      particleCanvas.style.width = '100%';
-      particleCanvas.style.height = '100%';
+      const dpr = window.devicePixelRatio || 1;
+      particleCanvas.width = Math.round(rect.width * dpr);
+      particleCanvas.height = Math.round(rect.height * dpr);
+      const ctx = particleCanvas.getContext('2d')!;
+      ctx.scale(dpr, dpr);
       const n = initParticles();
       state.particleCount = n;
+      if (n === 0) {
+        particleCheckbox.checked = false;
+        state.particleMode = false;
+        svg.style.display = 'block';
+        particleCanvas.style.display = 'none';
+        showToast('粒子模式需要先上传 SVG');
+        return;
+      }
       showToast('粒子模式：' + n + ' 个粒子');
       state.paused = false;
+      if (!state.rafId) { state.animStart = performance.now(); state.lastTickTime = 0; tick(); }
     } else {
       svg.style.display = 'block';
       particleCanvas.style.display = 'none';

@@ -42,6 +42,8 @@ export interface AppState {
   staggerFactor: number;
   keepStrokes: boolean;
   easing: string;
+  particleMode: boolean;
+  particleCount: number;
   strokeWidth: number;
   bgColor: string;
   autoBgEnabled: boolean;

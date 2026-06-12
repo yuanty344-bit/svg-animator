@@ -10,6 +10,7 @@
 import { state, CONST, totalCycle, elementCycle, perElemStrokeDur } from '../state/store.js';
 import { getLength } from './renderer.js';
 import { hexToRgb, applyEasing } from '../utils/helpers.js';
+import { updateParticles, renderParticles } from './particles.js';
 
 function getFillRgb() {
   if (state.cachedFillRgb && state.cachedFillHex === state.fillColor)
@@ -162,7 +163,14 @@ export function tick(): void {
   state.lastTickTime = now;
   const progress = (rawElapsed % cycleDuration) / cycleDuration;
   state.currentProgress = progress;
-  updateElements(progress);
+
+  if (state.particleMode) {
+    updateParticles(1/60);
+    const cvs = document.getElementById('particleCanvas') as HTMLCanvasElement;
+    if (cvs) renderParticles(cvs);
+  } else {
+    updateElements(progress);
+  }
 
   const timelineSlider = document.getElementById('timeline') as HTMLInputElement;
   const timeVal = document.getElementById('timeVal')!;

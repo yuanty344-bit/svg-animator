@@ -10,6 +10,7 @@ import { parseSVG } from '../core/parser.js';
 import { rebuildPreviewDOM, reorderDomElements, measureAndCacheLengths } from '../core/renderer.js';
 import { updateColors, updateElements, invalidateFillCache, resetAnimation, tick } from '../core/animator.js';
 import { buildCurrentSnapshotSVG, exportHTML, exportSVG, exportImage, showToast } from '../export/exporter.js';
+import { initParticles, updateParticles, renderParticles, destroyParticles, getParticleCount } from '../core/particles.js';
 
 // ── 图层面板 ────────────────────────────────────────────
 
@@ -221,6 +222,34 @@ export function initUI(): void {
   keepStrokesCheckbox.addEventListener('change', () => {
     state.keepStrokes = keepStrokesCheckbox.checked;
     updateElements(state.currentProgress);
+  });
+  const particleCheckbox = $('particleMode') as HTMLInputElement;
+  const particleCanvas = $('particleCanvas') as HTMLCanvasElement;
+  particleCheckbox.addEventListener('change', () => {
+    state.particleMode = particleCheckbox.checked;
+    const svg = $('previewSvg');
+    if (state.particleMode) {
+      svg.style.display = 'block';  // SVG stays for path sampling
+      particleCanvas.style.display = 'block';
+      particleCanvas.style.position = 'absolute';
+      particleCanvas.style.top = '0';
+      particleCanvas.style.left = '0';
+      const bg = $('previewBg');
+      const rect = bg.getBoundingClientRect();
+      particleCanvas.width = rect.width * 2;
+      particleCanvas.height = rect.height * 2;
+      particleCanvas.style.width = '100%';
+      particleCanvas.style.height = '100%';
+      const n = initParticles();
+      state.particleCount = n;
+      showToast('粒子模式：' + n + ' 个粒子');
+      state.paused = false;
+    } else {
+      svg.style.display = 'block';
+      particleCanvas.style.display = 'none';
+      destroyParticles();
+      state.particleCount = 0;
+    }
   });
   const easingSelect = $('easing') as HTMLSelectElement;
   easingSelect.addEventListener('change', () => {

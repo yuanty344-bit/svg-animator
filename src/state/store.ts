@@ -42,6 +42,10 @@ export const state: AppState = {
   autoBgEnabled: true,         // 自动背景排序（当前始终用原始顺序）
   pathStrokeVisible: [],       // 每条路径的描边可见性
 
+  // ── 粒子模式 ──
+  particleMode: false,         // 粒子动画模式
+  particleCount: 0,            // 当前粒子总数
+
   // ── 缓存 & 内部 ──
   cachedFillRgb: null,         // fillColor 的 RGB 缓存
   cachedFillHex: '',           // 缓存对应的 hex 值

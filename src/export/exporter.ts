@@ -8,6 +8,7 @@
 import { state, CONST, totalCycle, elementCycle, perElemStrokeDur } from '../state/store.js';
 import { escHtml, parseViewBoxParts } from '../utils/helpers.js';
 import { getLength } from '../core/renderer.js';
+import { getParticleCount } from '../core/particles.js';
 
 export function buildCurrentSnapshotSVG(includeBg: boolean): string {
   if (!state.currentData || state.strokeElements.length === 0) return '';
@@ -180,16 +181,20 @@ export function exportParticleVideo(): void {
   const cvs = document.getElementById('particleCanvas') as HTMLCanvasElement;
   if (!cvs || cvs.style.display === 'none') return;
 
+  const n = state.strokeElements.length;
+  const cycleS = state.sequentialMode ? elementCycle(n) : totalCycle();
+  const durationMs = Math.round(cycleS * 1000 / state.speedFactor);
+
   const stream = cvs.captureStream(15);
   const chunks: Blob[] = [];
   const rec = new MediaRecorder(stream, { mimeType: 'video/webm', videoBitsPerSecond: 3000000 });
   rec.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
   rec.onstop = () => {
     downloadBlob(URL.createObjectURL(new Blob(chunks, { type: 'video/webm' })), 'particles.webm');
-    showToast('粒子视频已下载');
+    showToast('粒子视频已下载 (' + (durationMs/1000).toFixed(1) + 's)');
   };
   rec.start();
-  setTimeout(() => rec.stop(), 9000);
+  setTimeout(() => rec.stop(), durationMs);
 }
 
 let toastTimer: number | null = null;

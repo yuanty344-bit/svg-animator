@@ -10,7 +10,7 @@ import { parseSVG } from '../core/parser.js';
 import { rebuildPreviewDOM, reorderDomElements, measureAndCacheLengths } from '../core/renderer.js';
 import { updateColors, updateElements, invalidateFillCache, resetAnimation, tick } from '../core/animator.js';
 import { buildCurrentSnapshotSVG, exportHTML, exportSVG, exportImage, showToast } from '../export/exporter.js';
-import { initParticles, updateParticles, renderParticles, destroyParticles, getParticleCount } from '../core/particles.js';
+import { initParticles, renderParticles, destroyParticles } from '../core/particles.js';
 
 // ── 图层面板 ────────────────────────────────────────────
 
@@ -138,6 +138,7 @@ export function initUI(): void {
   const pastePanel = $('pastePanel');
   const pasteText = $('pasteText') as HTMLTextAreaElement;
   const fileInput = $('fileInput') as HTMLInputElement;
+  const particleCanvas = $('particleCanvas') as HTMLCanvasElement;
 
   previewBg.style.backgroundColor = state.bgColor;
   updateColors();
@@ -167,7 +168,11 @@ export function initUI(): void {
     if (state.rafId) { cancelAnimationFrame(state.rafId); state.rafId = null; }
     state.currentProgress = parseFloat(timelineSlider.value) / 100;
     timeVal.textContent = Math.round(state.currentProgress * 100) + '%';
-    updateElements(state.currentProgress);
+    if (state.particleMode) {
+      renderParticles(particleCanvas);
+    } else {
+      updateElements(state.currentProgress);
+    }
   });
   timelineSlider.addEventListener('change', () => {
     if (state.playDesired) {
@@ -224,20 +229,15 @@ export function initUI(): void {
     updateElements(state.currentProgress);
   });
   const particleCheckbox = $('particleMode') as HTMLInputElement;
-  const particleCanvas = $('particleCanvas') as HTMLCanvasElement;
   particleCheckbox.addEventListener('change', () => {
     state.particleMode = particleCheckbox.checked;
     const svg = $('previewSvg');
     if (state.particleMode) {
       svg.style.display = 'none';
       particleCanvas.style.display = 'block';
-      const bg = $('previewBg');
-      const rect = bg.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      particleCanvas.width = Math.round(rect.width * dpr);
-      particleCanvas.height = Math.round(rect.height * dpr);
-      const ctx = particleCanvas.getContext('2d')!;
-      ctx.scale(dpr, dpr);
+      const rect = $('previewBg').getBoundingClientRect();
+      particleCanvas.width = Math.round(rect.width);
+      particleCanvas.height = Math.round(rect.height);
       const n = initParticles();
       state.particleCount = n;
       if (n === 0) {

@@ -207,11 +207,12 @@ export function initUI(): void {
   });
 
   // ── 颜色 ──────────────────────────────────────────────
-  strokeColorInput.addEventListener('input', () => { state.strokeColor = strokeColorInput.value; updateColors(); });
-  fillColorInput.addEventListener('input', () => { state.fillColor = fillColorInput.value; state.syncColors = false; syncCheckbox.checked = false; updateColors(); });
+  strokeColorInput.addEventListener('input', () => { state.strokeColor = strokeColorInput.value; updateColors(); reinitParticlesIfActive(); });
+  fillColorInput.addEventListener('input', () => { state.fillColor = fillColorInput.value; state.syncColors = false; syncCheckbox.checked = false; updateColors(); reinitParticlesIfActive(); });
   syncCheckbox.addEventListener('change', () => { state.syncColors = syncCheckbox.checked; updateColors(); });
   preserveColorsCheckbox.addEventListener('change', () => {
     state.preserveOriginalColors = preserveColorsCheckbox.checked;
+    reinitParticlesIfActive();
     if (state.currentData) {
       fullRebuild();
       if (layerPanel.style.display === 'flex') renderLayerPathList();
@@ -220,39 +221,51 @@ export function initUI(): void {
   });
   sequentialCheckbox.addEventListener('change', () => {
     state.sequentialMode = sequentialCheckbox.checked;
+    reinitParticlesIfActive();
     if (state.currentData) fullRebuild();
     showToast(state.sequentialMode ? '逐条绘制：开' : '同步绘制：开');
   });
   const keepStrokesCheckbox = $('keepStrokes') as HTMLInputElement;
   keepStrokesCheckbox.addEventListener('change', () => {
     state.keepStrokes = keepStrokesCheckbox.checked;
+    reinitParticlesIfActive();
     updateElements(state.currentProgress);
   });
   const particleCheckbox = $('particleMode') as HTMLInputElement;
+  const reinitParticlesIfActive = () => {
+    if (state.particleMode && state.currentData) {
+      initParticles();
+      renderParticles(particleCanvas);
+    }
+  };
+
+  const startParticleMode = () => {
+    const svg = $('previewSvg');
+    svg.style.display = 'none';
+    particleCanvas.style.display = 'block';
+    const rect = $('previewBg').getBoundingClientRect();
+    particleCanvas.width = Math.round(rect.width);
+    particleCanvas.height = Math.round(rect.height);
+    const n = initParticles();
+    state.particleCount = n;
+    if (n === 0) {
+      particleCheckbox.checked = false;
+      state.particleMode = false;
+      svg.style.display = 'block';
+      particleCanvas.style.display = 'none';
+      showToast('粒子模式需要先上传 SVG');
+      return;
+    }
+    showToast('粒子模式：' + n + ' 个粒子');
+    state.paused = false;
+    if (!state.rafId) { state.animStart = performance.now(); state.lastTickTime = 0; tick(); }
+  };
+
   particleCheckbox.addEventListener('change', () => {
     state.particleMode = particleCheckbox.checked;
-    const svg = $('previewSvg');
-    if (state.particleMode) {
-      svg.style.display = 'none';
-      particleCanvas.style.display = 'block';
-      const rect = $('previewBg').getBoundingClientRect();
-      particleCanvas.width = Math.round(rect.width);
-      particleCanvas.height = Math.round(rect.height);
-      const n = initParticles();
-      state.particleCount = n;
-      if (n === 0) {
-        particleCheckbox.checked = false;
-        state.particleMode = false;
-        svg.style.display = 'block';
-        particleCanvas.style.display = 'none';
-        showToast('粒子模式需要先上传 SVG');
-        return;
-      }
-      showToast('粒子模式：' + n + ' 个粒子');
-      state.paused = false;
-      if (!state.rafId) { state.animStart = performance.now(); state.lastTickTime = 0; tick(); }
-    } else {
-      svg.style.display = 'block';
+    if (state.particleMode) startParticleMode();
+    else {
+      $('previewSvg').style.display = 'block';
       particleCanvas.style.display = 'none';
       destroyParticles();
       state.particleCount = 0;
@@ -290,6 +303,7 @@ export function initUI(): void {
   staggerSlider.addEventListener('input', () => {
     state.staggerFactor = parseFloat(staggerSlider.value);
     staggerVal.textContent = state.staggerFactor + '×';
+    reinitParticlesIfActive();
     if (state.currentData && state.sequentialMode) fullRebuild();
   });
   bgColorInput.addEventListener('input', () => { state.bgColor = bgColorInput.value; previewBg.style.backgroundColor = state.bgColor; });

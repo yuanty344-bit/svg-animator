@@ -174,6 +174,24 @@ export function exportImage(format: 'png' | 'jpg'): void {
 }
 
 
+// ── 粒子动画导出 ────────────────────────────────────────
+
+export function exportParticleVideo(): void {
+  const cvs = document.getElementById('particleCanvas') as HTMLCanvasElement;
+  if (!cvs || cvs.style.display === 'none') return;
+
+  const stream = cvs.captureStream(15);
+  const chunks: Blob[] = [];
+  const rec = new MediaRecorder(stream, { mimeType: 'video/webm', videoBitsPerSecond: 3000000 });
+  rec.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+  rec.onstop = () => {
+    downloadBlob(URL.createObjectURL(new Blob(chunks, { type: 'video/webm' })), 'particles.webm');
+    showToast('粒子视频已下载');
+  };
+  rec.start();
+  setTimeout(() => rec.stop(), 9000);
+}
+
 let toastTimer: number | null = null;
 function showToast(msg: string): void {
   const toast = document.getElementById('toast')!;

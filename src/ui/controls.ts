@@ -9,7 +9,7 @@ import { state, CONST, totalCycle, elementCycle } from '../state/store.js';
 import { parseSVG } from '../core/parser.js';
 import { rebuildPreviewDOM, reorderDomElements, measureAndCacheLengths } from '../core/renderer.js';
 import { updateColors, updateElements, invalidateFillCache, resetAnimation, tick } from '../core/animator.js';
-import { buildCurrentSnapshotSVG, exportHTML, exportSVG, exportImage, showToast } from '../export/exporter.js';
+import { buildCurrentSnapshotSVG, exportHTML, exportSVG, exportImage, exportParticleVideo, showToast } from '../export/exporter.js';
 import { initParticles, renderParticles, destroyParticles } from '../core/particles.js';
 
 // ── 图层面板 ────────────────────────────────────────────
@@ -455,7 +455,7 @@ export function initUI(): void {
   $('dlBtn').addEventListener('click', () => {
     if (!state.currentData) return;
     const fmt = ($('exportFormat') as HTMLSelectElement).value;
-    if (fmt === 'html') exportHTML();
+    if (fmt === 'html') { if (state.particleMode) exportParticleVideo(); else exportHTML(); }
     else if (fmt === 'svg') exportSVG();
     else if (fmt === 'png' || fmt === 'jpg') exportImage(fmt as 'png' | 'jpg');
   });

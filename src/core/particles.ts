@@ -82,11 +82,16 @@ export function renderParticles(cvs: HTMLCanvasElement): void {
   lastP = p;
 
   const cycleTime = p * cycleDur;
-  const flightDur = cycleDur * 0.7; // 飞行占据 70% 的周期
+  const flightDur = cycleDur * 0.7;
 
-  // 透明背景 → 拖尾效果
-  ctx.fillStyle = 'rgba(0,0,0,0.2)';
+  // 背景色（读当前 state.bgColor）
+  const bg = state.bgColor || '#000';
+  const r0 = parseInt(bg.slice(1,3),16), g0 = parseInt(bg.slice(3,5),16), b0 = parseInt(bg.slice(5,7),16);
+  ctx.fillStyle = `rgba(${r0},${g0},${b0},0.25)`;
   ctx.fillRect(0, 0, w, h);
+
+  // 进度为 0 时清空，不画粒子
+  if (p < 0.001) return;
 
   groups.forEach(g => {
     g.particles.forEach(pt => {

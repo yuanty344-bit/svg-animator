@@ -207,8 +207,10 @@ export function initUI(): void {
   });
 
   // ── 颜色 ──────────────────────────────────────────────
-  strokeColorInput.addEventListener('input', () => { state.strokeColor = strokeColorInput.value; updateColors(); reinitParticlesIfActive(); });
-  fillColorInput.addEventListener('input', () => { state.fillColor = fillColorInput.value; state.syncColors = false; syncCheckbox.checked = false; updateColors(); reinitParticlesIfActive(); });
+  strokeColorInput.addEventListener('input', () => { state.strokeColor = strokeColorInput.value; updateColors(); });
+  strokeColorInput.addEventListener('change', () => reinitParticlesIfActive());
+  fillColorInput.addEventListener('input', () => { state.fillColor = fillColorInput.value; state.syncColors = false; syncCheckbox.checked = false; updateColors(); });
+  fillColorInput.addEventListener('change', () => reinitParticlesIfActive());
   syncCheckbox.addEventListener('change', () => { state.syncColors = syncCheckbox.checked; updateColors(); });
   preserveColorsCheckbox.addEventListener('change', () => {
     state.preserveOriginalColors = preserveColorsCheckbox.checked;
@@ -275,6 +277,7 @@ export function initUI(): void {
   easingSelect.addEventListener('change', () => {
     state.easing = easingSelect.value;
     updateElements(state.currentProgress);
+    reinitParticlesIfActive();
   });
 
   // ── 动画预设 ──────────────────────────────────────────
@@ -292,6 +295,7 @@ export function initUI(): void {
     state.strokeElements.forEach(el => el.style.strokeWidth = String(p.strokeWidth));
     if (!state.paused) { const now = performance.now(); const cd = state.sequentialMode ? elementCycle(state.strokeElements.length) : totalCycle(); state.animStart = now - (state.currentProgress * cd) / p.speed * 1000; state.lastTickTime = 0; }
     updateElements(state.currentProgress);
+    reinitParticlesIfActive();
     showToast('预设：' + p.label);
   };
   $('presetFast').addEventListener('click', () => applyPreset('fast'));
@@ -307,6 +311,7 @@ export function initUI(): void {
     if (state.currentData && state.sequentialMode) fullRebuild();
   });
   bgColorInput.addEventListener('input', () => { state.bgColor = bgColorInput.value; previewBg.style.backgroundColor = state.bgColor; });
+  bgColorInput.addEventListener('change', () => reinitParticlesIfActive());
 
   // ── 播放/暂停 ─────────────────────────────────────────
   $('playPauseBtn').addEventListener('click', () => {

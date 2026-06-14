@@ -224,8 +224,8 @@ describe('integration: bus + engine events', () => {
   it('MODE_CHANGED event passes mode and value', () => {
     const fn = vi.fn();
     const unsub = bus.on(Events.MODE_CHANGED, fn);
-    bus.emit(Events.MODE_CHANGED, { mode: 'easing', value: 'ease-in' });
-    expect(fn).toHaveBeenCalledWith({ mode: 'easing', value: 'ease-in' });
+    bus.emit(Events.MODE_CHANGED, { mode: 'keepStrokes', value: false });
+    expect(fn).toHaveBeenCalledWith({ mode: 'keepStrokes', value: false });
     unsub();
   });
 

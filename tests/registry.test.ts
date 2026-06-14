@@ -14,9 +14,9 @@ describe('Control Registry', () => {
       <input id="strokeColor" type="color" value="#ffffff" />
       <input id="syncColors" type="checkbox" checked />
       <input id="staggerFactor" type="range" min="0.5" max="3" step="0.25" value="1" />
-      <select id="easing">
-        <option value="linear" selected>线性</option>
-        <option value="ease-in">缓入</option>
+      <select id="exportFormat">
+        <option value="html" selected>HTML</option>
+        <option value="svg">SVG</option>
       </select>
       <button id="resetBtn">重置</button>
     `;
@@ -69,14 +69,14 @@ describe('Control Registry', () => {
 
     it('binds select change', () => {
       const onChange = vi.fn();
-      registerControl({ id: 'easing', type: 'select', group: 'animation', onChange });
+      registerControl({ id: 'exportFormat', type: 'select', group: 'export', onChange });
       bindAllControls();
 
-      const el = document.getElementById('easing') as HTMLSelectElement;
-      el.value = 'ease-in';
+      const el = document.getElementById('exportFormat') as HTMLSelectElement;
+      el.value = 'svg';
       el.dispatchEvent(new Event('change', { bubbles: true }));
 
-      expect(onChange).toHaveBeenCalledWith('ease-in');
+      expect(onChange).toHaveBeenCalledWith('svg');
     });
 
     it('binds button click', () => {

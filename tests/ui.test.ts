@@ -24,7 +24,6 @@ beforeEach(() => {
     <span id="strokeWidthVal">8</span>
     <input id="staggerFactor" value="1"/>
     <span id="staggerVal">1×</span>
-    <select id="easing"><option value="linear" selected></option></select>
   `;
 
   state.currentData = {

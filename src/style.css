@@ -154,15 +154,6 @@ input[type=color]::-webkit-color-swatch{
 .icon-label{font-size:10px;opacity:.7;white-space:nowrap}
 .top-bar .export-select{padding:4px 10px;font-size:11px}
 
-.easing-select{
-  background:var(--ui-bg-06);
-  border:1px solid var(--ui-border-12);
-  border-radius:6px;color:var(--text-color);font-size:10px;
-  padding:3px 6px;cursor:pointer;outline:none;
-}
-.easing-select:hover{background:var(--ui-bg-12)}
-.easing-select option{background:var(--select-option-bg);color:var(--text-color)}
-
 .top-bar .text-btn{padding:5px 12px;font-size:11px}
 
 .bar-label{font-size:10px;opacity:.5;white-space:nowrap}
@@ -360,7 +351,6 @@ input[type=color]::-webkit-color-swatch{
   .ctrl-group input[type=range]{width:50px}
   .ctrl-group{font-size:10px}
   .upload-inline{padding:3px 8px;font-size:9px}
-  .easing-select{font-size:9px;padding:2px 4px}
 }
 @media(max-width:480px){
   .top-bar .sync-inline{font-size:9px}

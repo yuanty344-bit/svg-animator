@@ -73,12 +73,6 @@ function registerAllControls() {
       () => state.keepStrokes,
       (c) => { state.keepStrokes = c; bus.emit(Events.MODE_CHANGED, { mode: 'keepStrokes', value: c }); },
       v as boolean, '保留描边')) });
-  registerControl({ id: 'easing', type: 'select', label: '缓动', title: '动画缓动曲线', group: 'animation', default: 'linear',
-    options: [{value:'linear',label:'线性'},{value:'ease-in',label:'缓入'},{value:'ease-out',label:'缓出'},{value:'ease-in-out',label:'缓入缓出'}],
-    onChange: (v) => undoMgr.execute(createPropertyCommand(
-      () => state.easing,
-      (c) => { state.easing = c; bus.emit(Events.MODE_CHANGED, { mode: 'easing', value: c }); },
-      v as string, '缓动曲线')) });
   registerControl({ id: 'themeToggle', type: 'button', label: '主题', title: '切换亮色/暗色主题', group: 'ui', default: 'dark',
     onChange: () => { const next = toggleTheme(); updateThemeIcon(next); } });
 }
@@ -496,7 +490,7 @@ export function initUI(): void {
       syncColors: state.syncColors, bgColor: state.bgColor,
       preserveOriginalColors: state.preserveOriginalColors,
       sequentialMode: state.sequentialMode, staggerFactor: state.staggerFactor,
-      keepStrokes: state.keepStrokes, easing: state.easing,
+      keepStrokes: state.keepStrokes,
       customFills: [...state.customFills],
     };
     const applyState = (s: typeof snap) => {
@@ -510,7 +504,6 @@ export function initUI(): void {
       state.sequentialMode = s.sequentialMode; sequentialCheckbox.checked = s.sequentialMode;
       state.staggerFactor = s.staggerFactor; staggerSlider.value = String(s.staggerFactor); staggerVal.textContent = s.staggerFactor + '×';
       state.keepStrokes = s.keepStrokes; (document.getElementById('keepStrokes') as HTMLInputElement).checked = s.keepStrokes;
-      state.easing = s.easing; (document.getElementById('easing') as HTMLSelectElement).value = s.easing;
       state.customFills = [...s.customFills];
       fullRebuild();
     };
@@ -530,7 +523,6 @@ export function initUI(): void {
         state.sequentialMode = false; sequentialCheckbox.checked = false;
         state.staggerFactor = 1; staggerSlider.value = '1'; staggerVal.textContent = '1×';
         state.keepStrokes = true; (document.getElementById('keepStrokes') as HTMLInputElement).checked = true;
-        state.easing = 'linear'; (document.getElementById('easing') as HTMLSelectElement).value = 'linear';
         fullRebuild();
         state.customFills = state.originalFills.map(() => null);
         if (layerPanel.style.display === 'flex') renderLayerPathList();

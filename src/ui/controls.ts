@@ -8,10 +8,17 @@
 import { state, CONST, totalCycle, elementCycle } from '../state/store.js';
 import { parseSVG } from '../core/parser.js';
 import { rebuildPreviewDOM, reorderDomElements, measureAndCacheLengths } from '../core/renderer.js';
-import { updateColors, updateElements, invalidateFillCache, resetAnimation, tick } from '../core/animator.js';
+import { updateColors, resetAnimation, tick } from '../core/animator.js';
+import { updateElements, invalidateFillCache } from '../engines/stroke-engine.js';
 import { buildCurrentSnapshotSVG, exportHTML, exportSVG, exportImage, exportParticleVideo, showToast } from '../export/exporter.js';
-import { initParticles, renderParticles, destroyParticles } from '../core/particles.js';
+import { initParticles, renderParticles, destroyParticles, particleEngine } from '../core/particles.js';
 import { registerControl, setControlValue, bindAllControls } from '../core/control-registry.js';
+import { registerEngine, switchEngine, getActiveId } from '../core/engine-registry.js';
+import { strokeEngine } from '../engines/stroke-engine.js';
+
+// 注册引擎
+registerEngine(strokeEngine);
+registerEngine(particleEngine);
 
 // ═══════════════════════════════════════════════════════════
 // 控件注册 — 声明式定义所有控件。
@@ -151,14 +158,18 @@ function toggleParticleMode(on: boolean) {
   const svg = document.getElementById('previewSvg')!;
   if (!particleCanvas) particleCanvas = document.getElementById('particleCanvas') as HTMLCanvasElement;
   const cvs = particleCanvas!;
+
   if (on) {
+    switchEngine('particle');
     svg.style.display = 'none'; cvs.style.display = 'block';
     const rect = document.getElementById('previewBg')!.getBoundingClientRect();
     cvs.width = Math.round(rect.width); cvs.height = Math.round(rect.height);
-    const n = initParticles();
+    initParticles();
+    const n = getParticleCount();
     state.particleCount = n;
     if (n === 0) {
       state.particleMode = false; svg.style.display = 'block'; cvs.style.display = 'none';
+      switchEngine('stroke');
       showToast('粒子模式需要先上传 SVG'); return;
     }
     showToast('粒子模式：' + n + ' 个粒子');
@@ -166,11 +177,14 @@ function toggleParticleMode(on: boolean) {
     syncPlayIcon();
     if (!state.rafId) { state.animStart = performance.now(); state.lastTickTime = 0; tick(); }
   } else {
+    switchEngine('stroke');
     svg.style.display = 'block'; cvs.style.display = 'none';
     destroyParticles();
     state.particleCount = 0;
   }
 }
+
+import { getParticleCount } from '../core/particles.js';
 
 // ── 初始化 ──────────────────────────────────────────────
 

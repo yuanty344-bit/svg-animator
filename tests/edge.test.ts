@@ -3,7 +3,8 @@
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { state, CONST, totalCycle } from '../src/state/store.js';
-import { updateColors, updateElements, invalidateFillCache } from '../src/core/animator.js';
+import { updateColors } from '../src/core/animator.js';
+import { updateElements, invalidateFillCache } from '../src/engines/stroke-engine.js';
 import { exportHTML } from '../src/export/exporter.js';
 import { parseSVG } from '../src/core/parser.js';
 import { sortElementsByArea, measureAndCacheLengths } from '../src/core/renderer.js';

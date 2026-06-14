@@ -3,7 +3,7 @@
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { state, CONST } from '../src/state/store.js';
-import { updateElements } from '../src/core/animator.js';
+import { updateElements } from '../src/engines/stroke-engine.js';
 
 function makeSvgEl(tag: string) {
   return document.createElementNS('http://www.w3.org/2000/svg', tag);

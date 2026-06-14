@@ -7,6 +7,7 @@
  */
 import { state, totalCycle, elementCycle } from '../state/store.js';
 import { getLength } from './renderer.js';
+import type { AnimationEngine } from './engine-registry.js';
 
 let groups: { particles: { tx:number; ty:number; sx:number; sy:number; col:string; sz:number; dr:number }[] }[] = [];
 let initialized = false;
@@ -118,3 +119,25 @@ export function renderParticles(cvs: HTMLCanvasElement): void {
 
 export function destroyParticles(): void { groups = []; initialized = false; lastP = -1; }
 export function getParticleCount(): number { return groups.reduce((s, g) => s + g.particles.length, 0); }
+
+export const particleEngine: AnimationEngine = {
+  id: 'particle',
+  name: '粒子动画',
+
+  init() {
+    if (!state.currentData) return;
+    initParticles();
+  },
+
+  tick(progress: number) {
+    updateParticles(1 / 60);
+  },
+
+  render(ctx) {
+    if (ctx?.canvas) renderParticles(ctx.canvas);
+  },
+
+  destroy() {
+    destroyParticles();
+  },
+};

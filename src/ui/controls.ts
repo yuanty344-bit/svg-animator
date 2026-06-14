@@ -5,7 +5,7 @@
  * 包含：上传、时间轴、速度、颜色、预设、图层、键盘、导出
  */
 
-import { state, CONST, totalCycle, elementCycle } from '../state/store.js';
+import { state, CONST } from '../state/store.js';
 import { parseSVG } from '../core/parser.js';
 import { rebuildPreviewDOM, reorderDomElements, measureAndCacheLengths } from '../core/renderer.js';
 import { resetAnimation, tick, setRenderContext } from '../core/animator.js';
@@ -13,11 +13,11 @@ import { updateColors, updateElements } from '../engines/stroke-engine.js';
 import { buildCurrentSnapshotSVG, exportHTML, exportSVG, exportImage, exportParticleVideo, showToast } from '../export/exporter.js';
 import { initParticles, destroyParticles, particleEngine } from '../core/particles.js';
 import { registerControl, setControlValue, bindAllControls } from '../core/control-registry.js';
-import { registerEngine, switchEngine, getActiveId } from '../core/engine-registry.js';
+import { registerEngine, switchEngine } from '../core/engine-registry.js';
 import { strokeEngine } from '../engines/stroke-engine.js';
 import { bus, Events } from '../core/events.js';
 import { toggleTheme, getCurrentTheme, type ThemeName } from '../core/themes.js';
-import { undoMgr, createPropertyCommand, createCallbackCommand, createCompositeCommand } from '../core/commands.js';
+import { undoMgr, createPropertyCommand, createCallbackCommand } from '../core/commands.js';
 
 // 注册引擎
 registerEngine(strokeEngine);
@@ -197,7 +197,6 @@ function scheduleKeyboardResume(): void {
 
 // ── 粒子模式切换 ────────────────────────────────────────
 
-let particleCheckbox: HTMLInputElement | null = null;
 let particleCanvas: HTMLCanvasElement | null = null;
 
 function toggleParticleMode(on: boolean) {

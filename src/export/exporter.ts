@@ -8,7 +8,7 @@
 import { state, CONST, totalCycle, elementCycle, perElemStrokeDur } from '../state/store.js';
 import { escHtml, parseViewBoxParts } from '../utils/helpers.js';
 import { getLength } from '../core/renderer.js';
-import { getParticleCount, renderParticles } from '../core/particles.js';
+import { renderParticles } from '../core/particles.js';
 
 export function buildCurrentSnapshotSVG(includeBg: boolean): string {
   if (!state.currentData || state.strokeElements.length === 0) return '';

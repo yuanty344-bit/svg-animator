@@ -49,7 +49,7 @@
 
 [data-theme="light"] {
   --text-rgb: 0, 0, 0;
-  --bg-rgb: 248, 248, 248;
+  --bg-rgb: 255, 255, 255;
   --panel-bg: rgba(255, 255, 255, 0.95);
   --select-option-bg: #eee;
   --panel-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);

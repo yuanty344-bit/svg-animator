@@ -212,13 +212,24 @@ export function initUI(): void {
   updateThemeIcon(getCurrentTheme());
   bus.on(Events.THEME_CHANGED, ({ theme }: { theme: ThemeName }) => {
     updateThemeIcon(theme);
-    // 预览区背景同步切换：暗色→黑，亮色→白
+    // 颜色同步：暗色→黑底白线，亮色→白底黑线
     const newBg = theme === 'dark' ? '#000000' : '#ffffff';
+    const newStroke = theme === 'dark' ? '#ffffff' : '#000000';
     state.bgColor = newBg;
+    state.strokeColor = newStroke;
+    state.fillColor = newStroke;
+    state.syncColors = true;
     const bgInput = document.getElementById('bgColor') as HTMLInputElement;
+    const scInput = document.getElementById('strokeColor') as HTMLInputElement;
+    const fcInput = document.getElementById('fillColor') as HTMLInputElement;
+    const syncCb = document.getElementById('syncColors') as HTMLInputElement;
     if (bgInput) bgInput.value = newBg;
+    if (scInput) scInput.value = newStroke;
+    if (fcInput) { fcInput.value = newStroke; fcInput.disabled = true; }
+    if (syncCb) syncCb.checked = true;
     const pb = document.getElementById('previewBg');
     if (pb) pb.style.backgroundColor = newBg;
+    updateColors();
   });
 
   // prettier-ignore
@@ -244,10 +255,16 @@ export function initUI(): void {
   const fileInput = $('fileInput') as HTMLInputElement;
   const particleCanvas = $('particleCanvas') as HTMLCanvasElement;
 
-  // 预览区背景色跟随主题
-  const initBg = getCurrentTheme() === 'dark' ? '#000000' : '#ffffff';
+  // 预览区 + 描边/填色跟随主题
+  const isDark = getCurrentTheme() === 'dark';
+  const initBg = isDark ? '#000000' : '#ffffff';
+  const initColor = isDark ? '#ffffff' : '#000000';
   state.bgColor = initBg;
+  state.strokeColor = initColor;
+  state.fillColor = initColor;
   bgColorInput.value = initBg;
+  strokeColorInput.value = initColor;
+  fillColorInput.value = initColor;
   previewBg.style.backgroundColor = initBg;
   updateColors();
 
@@ -411,10 +428,12 @@ export function initUI(): void {
   $('resetBtn').addEventListener('click', () => {
     if (!state.currentData) return;
     state.strokeWidth = 8; strokeWidthInput.value = '8'; strokeWidthVal.textContent = '8';
-    state.strokeColor = '#ffffff'; state.fillColor = '#ffffff'; state.syncColors = true;
-    strokeColorInput.value = '#ffffff'; fillColorInput.value = '#ffffff';
+    const resetIsDark = getCurrentTheme() === 'dark';
+    const resetColor = resetIsDark ? '#ffffff' : '#000000';
+    const resetBg = resetIsDark ? '#000000' : '#ffffff';
+    state.strokeColor = resetColor; state.fillColor = resetColor; state.syncColors = true;
+    strokeColorInput.value = resetColor; fillColorInput.value = resetColor;
     (document.getElementById('syncColors') as HTMLInputElement).checked = true;
-    const resetBg = getCurrentTheme() === 'dark' ? '#000000' : '#ffffff';
     state.bgColor = resetBg; bgColorInput.value = resetBg; previewBg.style.backgroundColor = resetBg;
     state.speedFactor = 1; speedSlider.value = '1'; speedVal.textContent = '1×';
     state.autoBgEnabled = true; autoBgCheckPanel.checked = true;

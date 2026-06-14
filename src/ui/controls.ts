@@ -11,6 +11,34 @@ import { rebuildPreviewDOM, reorderDomElements, measureAndCacheLengths } from '.
 import { updateColors, updateElements, invalidateFillCache, resetAnimation, tick } from '../core/animator.js';
 import { buildCurrentSnapshotSVG, exportHTML, exportSVG, exportImage, exportParticleVideo, showToast } from '../export/exporter.js';
 import { initParticles, renderParticles, destroyParticles } from '../core/particles.js';
+import { registerControl, setControlValue, bindAllControls } from '../core/control-registry.js';
+
+// ═══════════════════════════════════════════════════════════
+// 控件注册 — 声明式定义所有控件。
+// 加新控件：加一个 registerControl({...})，不动 HTML/CSS。
+// ═══════════════════════════════════════════════════════════
+
+function registerAllControls() {
+  registerControl({ id: 'strokeColor', type: 'color', label: '描边', title: '描边颜色', group: 'colors', default: '#ffffff',
+    onChange: (v) => { state.strokeColor = v as string; updateColors(); } });
+  registerControl({ id: 'fillColor', type: 'color', label: '填色', title: '填色颜色', group: 'colors', default: '#ffffff',
+    onChange: (v) => { state.fillColor = v as string; state.syncColors = false; setControlValue('syncColors', false); updateColors(); } });
+  registerControl({ id: 'syncColors', type: 'checkbox', label: '同步', title: '填色跟随描边', group: 'colors', default: true,
+    onChange: (v) => { state.syncColors = v as boolean; updateColors(); } });
+  registerControl({ id: 'preserveColors', type: 'checkbox', label: '保留原色', title: '恢复SVG原始颜色', group: 'animation', default: false,
+    onChange: (v) => { state.preserveOriginalColors = v as boolean; if (state.currentData) fullRebuild(); } });
+  registerControl({ id: 'sequentialMode', type: 'checkbox', label: '逐条', title: '路径逐条绘制', group: 'animation', default: false,
+    onChange: (v) => { state.sequentialMode = v as boolean; if (state.currentData) fullRebuild(); } });
+  registerControl({ id: 'staggerFactor', type: 'range', label: '间隔', title: '逐条间隔', group: 'animation', min: 0.5, max: 3, step: 0.25, default: 1,
+    onChange: (v) => { state.staggerFactor = v as number; if (state.currentData && state.sequentialMode) fullRebuild(); } });
+  registerControl({ id: 'particleMode', type: 'checkbox', label: '粒子', title: '粒子从四周飞入聚合', group: 'animation', default: false,
+    onChange: (v) => { toggleParticleMode(v as boolean); } });
+  registerControl({ id: 'keepStrokes', type: 'checkbox', label: '保留描边', title: '动画结束后保留描边轮廓', group: 'animation', default: true,
+    onChange: (v) => { state.keepStrokes = v as boolean; updateElements(state.currentProgress); } });
+  registerControl({ id: 'easing', type: 'select', label: '缓动', title: '动画缓动曲线', group: 'animation', default: 'linear',
+    options: [{value:'linear',label:'线性'},{value:'ease-in',label:'缓入'},{value:'ease-out',label:'缓出'},{value:'ease-in-out',label:'缓入缓出'}],
+    onChange: (v) => { state.easing = v as string; updateElements(state.currentProgress); } });
+}
 
 // ── 图层面板 ────────────────────────────────────────────
 
@@ -113,9 +141,44 @@ function scheduleKeyboardResume(): void {
   }, CONST.KEYBOARD_RESUME_DELAY);
 }
 
+// ── 粒子模式切换 ────────────────────────────────────────
+
+let particleCheckbox: HTMLInputElement | null = null;
+let particleCanvas: HTMLCanvasElement | null = null;
+
+function toggleParticleMode(on: boolean) {
+  state.particleMode = on;
+  const svg = document.getElementById('previewSvg')!;
+  if (!particleCanvas) particleCanvas = document.getElementById('particleCanvas') as HTMLCanvasElement;
+  const cvs = particleCanvas!;
+  if (on) {
+    svg.style.display = 'none'; cvs.style.display = 'block';
+    const rect = document.getElementById('previewBg')!.getBoundingClientRect();
+    cvs.width = Math.round(rect.width); cvs.height = Math.round(rect.height);
+    const n = initParticles();
+    state.particleCount = n;
+    if (n === 0) {
+      state.particleMode = false; svg.style.display = 'block'; cvs.style.display = 'none';
+      showToast('粒子模式需要先上传 SVG'); return;
+    }
+    showToast('粒子模式：' + n + ' 个粒子');
+    state.paused = false;
+    syncPlayIcon();
+    if (!state.rafId) { state.animStart = performance.now(); state.lastTickTime = 0; tick(); }
+  } else {
+    svg.style.display = 'block'; cvs.style.display = 'none';
+    destroyParticles();
+    state.particleCount = 0;
+  }
+}
+
 // ── 初始化 ──────────────────────────────────────────────
 
 export function initUI(): void {
+  // 注册所有控件 → 自动绑定事件
+  registerAllControls();
+  bindAllControls();
+
   // prettier-ignore
   const $ = (id: string) => document.getElementById(id)!;
 

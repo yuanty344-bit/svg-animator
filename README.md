@@ -10,7 +10,7 @@
 npm install
 npm run dev        # 开发模式，热更新
 npm run build      # 输出 dist/index.html，双击即用
-npm test           # 运行 111 项单元测试
+npm test           # 运行 149 项单元测试
 ```
 
 直接使用：打开 [dist/index.html](dist/index.html)，拖入 `dist/svg/` 下的示例 SVG。
@@ -40,13 +40,14 @@ npm test           # 运行 111 项单元测试
 | | WebM 视频 | 粒子动画录制（MediaRecorder） |
 | **交互** | 时间轴 | 拖拽跳转，键盘 ← → 逐帧微调（Shift 加速） |
 | | 自动恢复 | 键盘操作后 800ms 无操作自动恢复播放 |
+| | 撤销/重做 | Ctrl+Z 撤销，Ctrl+Y 重做，50 步历史 |
 | | 亮色/暗色主题 | ☀/🌙 一键切换，刷新保持 |
 | | 拖放上传 | 直接拖 SVG 文件到预览区 |
 | | 粘贴 SVG | 粘贴 SVG 代码 |
 
 ## 架构
 
-经过 4 次架构升级，模块间通过事件总线通信，松耦合、可扩展：
+经过 5 次架构升级，模块间通过事件总线通信，松耦合、可扩展：
 
 ```
 controls.ts ──emit──▶ EventBus ──on──▶ animator.ts
@@ -63,8 +64,9 @@ controls.ts ──emit──▶ EventBus ──on──▶ animator.ts
 |------|------|------|
 | **控件注册** | `core/control-registry.ts` | 声明式注册控件 → 自动 DOM 绑定。加新控件 = 1 行 `registerControl()` |
 | **引擎注册** | `core/engine-registry.ts` | 引擎实现 AnimationEngine 接口 → `registerEngine()` → `switchEngine()` 切换 |
-| **事件总线** | `core/events.ts` | 17 种标准事件，模块松耦合通信。加新功能只需监听已有事件 |
+| **事件总线** | `core/events.ts` | 18 种标准事件，模块松耦合通信。加新功能只需监听已有事件 |
 | **CSS 主题** | `core/themes.ts` + `style.css` | CSS 自定义属性驱动，`data-theme="dark\|light"` 一键切换，localStorage 持久化 |
+| **命令/撤销** | `core/commands.ts` | 所有操作包装为 Command → UndoManager 管理 undo/redo。Ctrl+Z 撤销，Ctrl+Y 重做，栈顶 50 |
 
 ### 动画引擎
 
@@ -86,6 +88,7 @@ src/
 │   ├── parser.ts      # SVG 解析（fill 处理、嵌套组、6种几何标签）
 │   ├── renderer.ts    # DOM 构建（measureAndCache、sortByArea、createElementPair）
 │   ├── animator.ts    # RAF 调度器（每帧委托 activeEngine.tick/render）
+│   ├── commands.ts    # 命令模式 + UndoManager（Ctrl+Z/Y 撤销重做）
 │   ├── themes.ts      # 主题管理（CSS 变量切换，localStorage 持久化）
 │   └── particles.ts   # 粒子动画引擎 + 粒子渲染函数
 ├── engines/           # 动画引擎实现
@@ -106,7 +109,7 @@ src/
 ## 测试
 
 ```bash
-npm test              # vitest + jsdom，111 项测试
+npm test              # vitest + jsdom，149 项测试
 ```
 
 ```
@@ -119,7 +122,9 @@ tests/
 ├── exporter.test.ts  # 快照（SVG 有效性、背景、样式）
 ├── ui.test.ts        # UI 层（图层列表、颜色显示、preserve 模式）
 ├── edge.test.ts      # 边界情况（updateColors / sortByArea mock / 嵌套组）
-└── events.test.ts    # 事件总线（on/once/off/emit/removeAll/错误隔离/集成）
+├── events.test.ts    # 事件总线（on/once/off/emit/removeAll/错误隔离/集成）
+├── registry.test.ts  # 注册中心（控件绑定/引擎切换/事件发射）
+└── commands.test.ts  # 命令模式（undo/redo/属性命令/回调命令/组合命令/栈上限）
 ```
 
 ## 技术栈

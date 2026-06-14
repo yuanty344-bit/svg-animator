@@ -110,6 +110,9 @@ export const Events = {
   // 主题
   THEME_CHANGED: 'theme:changed',
 
+  // 撤销
+  UNDO_STACK_CHANGED: 'undo:stack-changed',
+
   // 导出
   EXPORT_REQUESTED: 'export:requested',
 } as const;

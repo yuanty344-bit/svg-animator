@@ -17,6 +17,7 @@ import { registerEngine, switchEngine, getActiveId } from '../core/engine-regist
 import { strokeEngine } from '../engines/stroke-engine.js';
 import { bus, Events } from '../core/events.js';
 import { toggleTheme, getCurrentTheme, type ThemeName } from '../core/themes.js';
+import { undoMgr, createPropertyCommand, createCallbackCommand, createCompositeCommand } from '../core/commands.js';
 
 // 注册引擎
 registerEngine(strokeEngine);
@@ -29,24 +30,55 @@ registerEngine(particleEngine);
 
 function registerAllControls() {
   registerControl({ id: 'strokeColor', type: 'color', label: '描边', title: '描边颜色', group: 'colors', default: '#ffffff',
-    onChange: (v) => { state.strokeColor = v as string; bus.emit(Events.COLOR_CHANGED, { type: 'stroke' }); } });
+    onChange: (v) => undoMgr.execute(createPropertyCommand(
+      () => state.strokeColor,
+      (c) => { state.strokeColor = c; bus.emit(Events.COLOR_CHANGED, { type: 'stroke' }); },
+      v as string, '描边颜色')) });
   registerControl({ id: 'fillColor', type: 'color', label: '填色', title: '填色颜色', group: 'colors', default: '#ffffff',
-    onChange: (v) => { state.fillColor = v as string; state.syncColors = false; setControlValue('syncColors', false); bus.emit(Events.COLOR_CHANGED, { type: 'fill' }); } });
+    onChange: (v) => {
+      const oldFill = state.fillColor;
+      const oldSync = state.syncColors;
+      undoMgr.execute(createCallbackCommand(
+        () => { state.fillColor = v as string; state.syncColors = false; setControlValue('syncColors', false); bus.emit(Events.COLOR_CHANGED, { type: 'fill' }); },
+        () => { state.fillColor = oldFill; state.syncColors = oldSync; setControlValue('syncColors', oldSync); bus.emit(Events.COLOR_CHANGED, { type: 'fill' }); },
+        '填色'));
+    } });
   registerControl({ id: 'syncColors', type: 'checkbox', label: '同步', title: '填色跟随描边', group: 'colors', default: true,
-    onChange: (v) => { state.syncColors = v as boolean; bus.emit(Events.COLOR_CHANGED, { type: 'sync' }); } });
+    onChange: (v) => undoMgr.execute(createPropertyCommand(
+      () => state.syncColors,
+      (c) => { state.syncColors = c; bus.emit(Events.COLOR_CHANGED, { type: 'sync' }); },
+      v as boolean, '颜色同步')) });
   registerControl({ id: 'preserveColors', type: 'checkbox', label: '保留原色', title: '恢复SVG原始颜色', group: 'animation', default: false,
-    onChange: (v) => { state.preserveOriginalColors = v as boolean; if (state.currentData) { fullRebuild(); const lp = document.getElementById('layerPanel'); if (lp && lp.style.display === 'flex') renderLayerPathList(); } showToast(v ? '保留原色：开' : '统一颜色：开'); } });
+    onChange: (v) => { if (!state.currentData) return; undoMgr.execute(createCallbackCommand(
+      () => { state.preserveOriginalColors = v as boolean; fullRebuild(); const lp = document.getElementById('layerPanel'); if (lp && lp.style.display === 'flex') renderLayerPathList(); showToast(v ? '保留原色：开' : '统一颜色：开'); },
+      () => { state.preserveOriginalColors = !v; fullRebuild(); const lp = document.getElementById('layerPanel'); if (lp && lp.style.display === 'flex') renderLayerPathList(); showToast(!v ? '保留原色：开' : '统一颜色：开'); },
+      '保留原色')); } });
   registerControl({ id: 'sequentialMode', type: 'checkbox', label: '逐条', title: '路径逐条绘制', group: 'animation', default: false,
-    onChange: (v) => { state.sequentialMode = v as boolean; if (state.currentData) fullRebuild(); showToast(v ? '逐条绘制：开' : '同步绘制：开'); } });
+    onChange: (v) => { if (!state.currentData) return; undoMgr.execute(createCallbackCommand(
+      () => { state.sequentialMode = v as boolean; fullRebuild(); showToast(v ? '逐条绘制：开' : '同步绘制：开'); },
+      () => { state.sequentialMode = !v; fullRebuild(); showToast(!v ? '逐条绘制：开' : '同步绘制：开'); },
+      '逐条模式')); } });
   registerControl({ id: 'staggerFactor', type: 'range', label: '间隔', title: '逐条间隔', group: 'animation', min: 0.5, max: 3, step: 0.25, default: 1,
-    onChange: (v) => { state.staggerFactor = v as number; if (state.currentData && state.sequentialMode) fullRebuild(); } });
+    onChange: (v) => undoMgr.execute(createPropertyCommand(
+      () => state.staggerFactor,
+      (c) => { state.staggerFactor = c; if (state.currentData && state.sequentialMode) fullRebuild(); },
+      v as number, '逐条间隔')) });
   registerControl({ id: 'particleMode', type: 'checkbox', label: '粒子', title: '粒子从四周飞入聚合', group: 'animation', default: false,
-    onChange: (v) => { toggleParticleMode(v as boolean); } });
+    onChange: (v) => { undoMgr.execute(createCallbackCommand(
+      () => toggleParticleMode(v as boolean),
+      () => toggleParticleMode(!v),
+      '粒子模式')); } });
   registerControl({ id: 'keepStrokes', type: 'checkbox', label: '保留描边', title: '动画结束后保留描边轮廓', group: 'animation', default: true,
-    onChange: (v) => { state.keepStrokes = v as boolean; bus.emit(Events.MODE_CHANGED, { mode: 'keepStrokes', value: v }); } });
+    onChange: (v) => undoMgr.execute(createPropertyCommand(
+      () => state.keepStrokes,
+      (c) => { state.keepStrokes = c; bus.emit(Events.MODE_CHANGED, { mode: 'keepStrokes', value: c }); },
+      v as boolean, '保留描边')) });
   registerControl({ id: 'easing', type: 'select', label: '缓动', title: '动画缓动曲线', group: 'animation', default: 'linear',
     options: [{value:'linear',label:'线性'},{value:'ease-in',label:'缓入'},{value:'ease-out',label:'缓出'},{value:'ease-in-out',label:'缓入缓出'}],
-    onChange: (v) => { state.easing = v as string; bus.emit(Events.MODE_CHANGED, { mode: 'easing', value: v }); } });
+    onChange: (v) => undoMgr.execute(createPropertyCommand(
+      () => state.easing,
+      (c) => { state.easing = c; bus.emit(Events.MODE_CHANGED, { mode: 'easing', value: c }); },
+      v as string, '缓动曲线')) });
   registerControl({ id: 'themeToggle', type: 'button', label: '主题', title: '切换亮色/暗色主题', group: 'ui', default: 'dark',
     onChange: () => { const next = toggleTheme(); updateThemeIcon(next); } });
 }
@@ -66,8 +98,11 @@ export function renderLayerPathList(): void {
     cb.dataset.index = String(i);
     cb.addEventListener('change', function () {
       const idx = parseInt(this.dataset.index!);
-      state.pathStrokeVisible[idx] = this.checked;
-      bus.emit(Events.LAYER_VISIBILITY_CHANGED, { index: idx, visible: this.checked });
+      const newVal = this.checked;
+      undoMgr.execute(createPropertyCommand(
+        () => state.pathStrokeVisible[idx],
+        (v) => { state.pathStrokeVisible[idx] = v; bus.emit(Events.LAYER_VISIBILITY_CHANGED, { index: idx, visible: v }); },
+        newVal, '图层' + (idx + 1) + '可见'));
     });
     div.appendChild(cb);
     // 逐路径颜色选择器：显示当前有效填充色
@@ -81,8 +116,12 @@ export function renderLayerPathList(): void {
     colorInput.title = '路径 ' + (i + 1) + ' 颜色';
     colorInput.style.cssText = 'width:18px;height:18px;border:none;background:transparent;cursor:pointer;padding:0;flex-shrink:0';
     colorInput.addEventListener('input', function () {
-      state.customFills[i] = colorInput.value;
-      bus.emit(Events.LAYER_COLOR_CHANGED, { index: i, color: colorInput.value });
+      const idx = i;
+      const newVal = colorInput.value;
+      undoMgr.execute(createPropertyCommand(
+        () => state.customFills[idx],
+        (c) => { state.customFills[idx] = c; bus.emit(Events.LAYER_COLOR_CHANGED, { index: idx, color: c! }); },
+        newVal, '图层' + (idx + 1) + '颜色'));
     });
     div.appendChild(colorInput);
 
@@ -108,6 +147,7 @@ function handleFile(file: File): void {
       return;
     }
     state.currentData = data;
+    undoMgr.clear();
     fullRebuild();
   };
   reader.readAsText(file);
@@ -305,16 +345,20 @@ export function initUI(): void {
 
   // ── 速度 ──────────────────────────────────────────────
   speedSlider.addEventListener('input', () => {
-    state.speedFactor = parseFloat(speedSlider.value);
-    speedVal.textContent = state.speedFactor + '×';
-    bus.emit(Events.SPEED_CHANGED, { speed: state.speedFactor });
+    const newVal = parseFloat(speedSlider.value);
+    undoMgr.execute(createPropertyCommand(
+      () => state.speedFactor,
+      (s) => { state.speedFactor = s; speedVal.textContent = s + '×'; bus.emit(Events.SPEED_CHANGED, { speed: s }); },
+      newVal, '播放速度'));
   });
 
   // ── 描边宽 ────────────────────────────────────────────
   strokeWidthInput.addEventListener('input', () => {
-    state.strokeWidth = parseFloat(strokeWidthInput.value);
-    strokeWidthVal.textContent = String(state.strokeWidth);
-    bus.emit(Events.STROKE_WIDTH_CHANGED, { width: state.strokeWidth });
+    const newVal = parseFloat(strokeWidthInput.value);
+    undoMgr.execute(createPropertyCommand(
+      () => state.strokeWidth,
+      (w) => { state.strokeWidth = w; strokeWidthVal.textContent = String(w); bus.emit(Events.STROKE_WIDTH_CHANGED, { width: w }); },
+      newVal, '描边宽度'));
   });
 
   // ── 颜色 / 模式 ─────────────────────────────────────────
@@ -364,35 +408,52 @@ export function initUI(): void {
     standard: { speed: 1,   strokeWidth: 8,  stagger: 1,   label: '标准' },
     film:     { speed: 0.5, strokeWidth: 12, stagger: 1.5, label: '电影' },
   };
-  const applyPreset = (name: PresetName) => {
-    const p = presets[name];
-    state.speedFactor = p.speed; (speedSlider as HTMLInputElement).value = String(p.speed); speedVal.textContent = p.speed + '×';
-    state.strokeWidth = p.strokeWidth; strokeWidthInput.value = String(p.strokeWidth); strokeWidthVal.textContent = String(p.strokeWidth);
-    state.staggerFactor = p.stagger; (staggerSlider as HTMLInputElement).value = String(p.stagger); staggerVal.textContent = p.stagger + '×';
-    state.strokeElements.forEach(el => el.style.strokeWidth = String(p.strokeWidth));
+  const applyPresetValues = (speed: number, sw: number, stagger: number, label: string) => {
+    state.speedFactor = speed; (speedSlider as HTMLInputElement).value = String(speed); speedVal.textContent = speed + '×';
+    state.strokeWidth = sw; strokeWidthInput.value = String(sw); strokeWidthVal.textContent = String(sw);
+    state.staggerFactor = stagger; (staggerSlider as HTMLInputElement).value = String(stagger); staggerVal.textContent = stagger + '×';
+    state.strokeElements.forEach(el => el.style.strokeWidth = String(sw));
     updateElements(state.currentProgress);
-    bus.emit(Events.PRESET_APPLIED, { preset: name });
-    bus.emit(Events.STROKE_WIDTH_CHANGED, { width: p.strokeWidth });
-    bus.emit(Events.SPEED_CHANGED, { speed: p.speed });
-    bus.emit(Events.MODE_CHANGED, { mode: 'stagger', value: p.stagger });
-    showToast('预设：' + p.label);
+    bus.emit(Events.PRESET_APPLIED, { preset: label });
+    bus.emit(Events.STROKE_WIDTH_CHANGED, { width: sw });
+    bus.emit(Events.SPEED_CHANGED, { speed });
+    bus.emit(Events.MODE_CHANGED, { mode: 'stagger', value: stagger });
+    showToast('预设：' + label);
   };
-  $('presetFast').addEventListener('click', () => applyPreset('fast'));
-  $('presetStd').addEventListener('click', () => applyPreset('standard'));
-  $('presetFilm').addEventListener('click', () => applyPreset('film'));
+  const makePresetCmd = (name: PresetName) => {
+    const p = presets[name];
+    const oldSpeed = state.speedFactor, oldSW = state.strokeWidth, oldStagger = state.staggerFactor;
+    return createCallbackCommand(
+      () => applyPresetValues(p.speed, p.strokeWidth, p.stagger, p.label),
+      () => applyPresetValues(oldSpeed, oldSW, oldStagger, '恢复'),
+      '预设-' + p.label);
+  };
+  $('presetFast').addEventListener('click', () => undoMgr.execute(makePresetCmd('fast')));
+  $('presetStd').addEventListener('click', () => undoMgr.execute(makePresetCmd('standard')));
+  $('presetFilm').addEventListener('click', () => undoMgr.execute(makePresetCmd('film')));
 
   const staggerSlider = $('staggerFactor') as HTMLInputElement;
   const staggerVal = $('staggerVal');
-  staggerSlider.addEventListener('input', () => {
-    state.staggerFactor = parseFloat(staggerSlider.value);
-    staggerVal.textContent = state.staggerFactor + '×';
-    bus.emit(Events.MODE_CHANGED, { mode: 'stagger', value: state.staggerFactor });
+  const onStaggerChange = (newVal: number) => {
+    state.staggerFactor = newVal;
+    staggerVal.textContent = newVal + '×';
+    bus.emit(Events.MODE_CHANGED, { mode: 'stagger', value: newVal });
     if (state.currentData && state.sequentialMode) fullRebuild();
+  };
+  staggerSlider.addEventListener('input', () => {
+    const newVal = parseFloat(staggerSlider.value);
+    const oldVal = state.staggerFactor;
+    undoMgr.execute(createCallbackCommand(
+      () => onStaggerChange(newVal),
+      () => onStaggerChange(oldVal),
+      '逐条间隔'));
   });
   bgColorInput.addEventListener('input', () => {
-    state.bgColor = bgColorInput.value;
-    previewBg.style.backgroundColor = state.bgColor;
-    bus.emit(Events.BG_COLOR_CHANGED, { color: state.bgColor });
+    const newVal = bgColorInput.value;
+    undoMgr.execute(createPropertyCommand(
+      () => state.bgColor,
+      (c) => { state.bgColor = c; previewBg.style.backgroundColor = c; bus.emit(Events.BG_COLOR_CHANGED, { color: c }); },
+      newVal, '背景颜色'));
   });
 
   // ── 播放/暂停 ─────────────────────────────────────────
@@ -419,6 +480,7 @@ export function initUI(): void {
     const data = parseSVG(code);
     if (!data) { alert('无法解析SVG代码'); return; }
     state.currentData = data;
+    undoMgr.clear();
     fullRebuild();
     pastePanel.style.display = 'none';
     pasteText.value = '';
@@ -427,29 +489,57 @@ export function initUI(): void {
   // ── 重置 ──────────────────────────────────────────────
   $('resetBtn').addEventListener('click', () => {
     if (!state.currentData) return;
-    state.strokeWidth = 8; strokeWidthInput.value = '8'; strokeWidthVal.textContent = '8';
-    const resetIsDark = getCurrentTheme() === 'dark';
-    const resetColor = resetIsDark ? '#ffffff' : '#000000';
-    const resetBg = resetIsDark ? '#000000' : '#ffffff';
-    state.strokeColor = resetColor; state.fillColor = resetColor; state.syncColors = true;
-    strokeColorInput.value = resetColor; fillColorInput.value = resetColor;
-    (document.getElementById('syncColors') as HTMLInputElement).checked = true;
-    state.bgColor = resetBg; bgColorInput.value = resetBg; previewBg.style.backgroundColor = resetBg;
-    state.speedFactor = 1; speedSlider.value = '1'; speedVal.textContent = '1×';
-    state.autoBgEnabled = true; autoBgCheckPanel.checked = true;
-    state.preserveOriginalColors = false; preserveColorsCheckbox.checked = false;
-    state.sequentialMode = false; sequentialCheckbox.checked = false;
-    state.staggerFactor = 1; staggerSlider.value = '1'; staggerVal.textContent = '1×';
-    state.keepStrokes = true;
-    (document.getElementById('keepStrokes') as HTMLInputElement).checked = true;
-    state.easing = 'linear';
-    (document.getElementById('easing') as HTMLSelectElement).value = 'linear';
-    fullRebuild();
-    state.customFills = state.originalFills.map(() => null);
-    if (layerPanel.style.display === 'flex') renderLayerPathList();
-    fileInput.value = '';
-    if (state.keyboardResumeTimer) { clearTimeout(state.keyboardResumeTimer); state.keyboardResumeTimer = null; }
-    bus.emit(Events.ANIMATION_RESET);
+    // 捕获重置前快照
+    const snap = {
+      strokeWidth: state.strokeWidth, speedFactor: state.speedFactor,
+      strokeColor: state.strokeColor, fillColor: state.fillColor,
+      syncColors: state.syncColors, bgColor: state.bgColor,
+      preserveOriginalColors: state.preserveOriginalColors,
+      sequentialMode: state.sequentialMode, staggerFactor: state.staggerFactor,
+      keepStrokes: state.keepStrokes, easing: state.easing,
+      customFills: [...state.customFills],
+    };
+    const applyState = (s: typeof snap) => {
+      state.strokeWidth = s.strokeWidth; strokeWidthInput.value = String(s.strokeWidth); strokeWidthVal.textContent = String(s.strokeWidth);
+      state.strokeColor = s.strokeColor; strokeColorInput.value = s.strokeColor;
+      state.fillColor = s.fillColor; fillColorInput.value = s.fillColor;
+      state.syncColors = s.syncColors; (document.getElementById('syncColors') as HTMLInputElement).checked = s.syncColors;
+      state.bgColor = s.bgColor; bgColorInput.value = s.bgColor; previewBg.style.backgroundColor = s.bgColor;
+      state.speedFactor = s.speedFactor; speedSlider.value = String(s.speedFactor); speedVal.textContent = s.speedFactor + '×';
+      state.preserveOriginalColors = s.preserveOriginalColors; preserveColorsCheckbox.checked = s.preserveOriginalColors;
+      state.sequentialMode = s.sequentialMode; sequentialCheckbox.checked = s.sequentialMode;
+      state.staggerFactor = s.staggerFactor; staggerSlider.value = String(s.staggerFactor); staggerVal.textContent = s.staggerFactor + '×';
+      state.keepStrokes = s.keepStrokes; (document.getElementById('keepStrokes') as HTMLInputElement).checked = s.keepStrokes;
+      state.easing = s.easing; (document.getElementById('easing') as HTMLSelectElement).value = s.easing;
+      state.customFills = [...s.customFills];
+      fullRebuild();
+    };
+    undoMgr.execute(createCallbackCommand(
+      () => {
+        const defIsDark = getCurrentTheme() === 'dark';
+        const defColor = defIsDark ? '#ffffff' : '#000000';
+        const defBg = defIsDark ? '#000000' : '#ffffff';
+        state.strokeWidth = 8; strokeWidthInput.value = '8'; strokeWidthVal.textContent = '8';
+        state.strokeColor = defColor; strokeColorInput.value = defColor;
+        state.fillColor = defColor; fillColorInput.value = defColor;
+        state.syncColors = true; (document.getElementById('syncColors') as HTMLInputElement).checked = true;
+        state.bgColor = defBg; bgColorInput.value = defBg; previewBg.style.backgroundColor = defBg;
+        state.speedFactor = 1; speedSlider.value = '1'; speedVal.textContent = '1×';
+        state.autoBgEnabled = true; autoBgCheckPanel.checked = true;
+        state.preserveOriginalColors = false; preserveColorsCheckbox.checked = false;
+        state.sequentialMode = false; sequentialCheckbox.checked = false;
+        state.staggerFactor = 1; staggerSlider.value = '1'; staggerVal.textContent = '1×';
+        state.keepStrokes = true; (document.getElementById('keepStrokes') as HTMLInputElement).checked = true;
+        state.easing = 'linear'; (document.getElementById('easing') as HTMLSelectElement).value = 'linear';
+        fullRebuild();
+        state.customFills = state.originalFills.map(() => null);
+        if (layerPanel.style.display === 'flex') renderLayerPathList();
+        fileInput.value = '';
+        if (state.keyboardResumeTimer) { clearTimeout(state.keyboardResumeTimer); state.keyboardResumeTimer = null; }
+        bus.emit(Events.ANIMATION_RESET);
+      },
+      () => { applyState(snap); if (layerPanel.style.display === 'flex') renderLayerPathList(); },
+      '重置'));
   });
 
   // ── 图层面板 ──────────────────────────────────────────
@@ -467,10 +557,11 @@ export function initUI(): void {
   $('layerClose').addEventListener('click', () => { layerPanel.style.display = 'none'; });
   const resetPathColorsBtn = document.getElementById('resetPathColors')!;
   resetPathColorsBtn.addEventListener('click', () => {
-    state.customFills = state.originalFills.map(() => null);
-    bus.emit(Events.LAYER_COLORS_RESET);
-    renderLayerPathList();
-    showToast('路径颜色已重置');
+    const oldFills = [...state.customFills];
+    undoMgr.execute(createCallbackCommand(
+      () => { state.customFills = state.originalFills.map(() => null); bus.emit(Events.LAYER_COLORS_RESET); renderLayerPathList(); showToast('路径颜色已重置'); },
+      () => { state.customFills = [...oldFills]; bus.emit(Events.LAYER_COLORS_RESET); renderLayerPathList(); showToast('路径颜色已恢复'); },
+      '重置路径颜色'));
   });
 
   autoBgCheckPanel.addEventListener('change', () => {
@@ -528,6 +619,19 @@ export function initUI(): void {
       timeVal.textContent = Math.round(newVal) + '%';
       bus.emit(Events.TIMELINE_SEEK, { progress: state.currentProgress });
       if (state.keyboardResumeTimer) scheduleKeyboardResume();
+    }
+  });
+
+  // ── 撤销/重做快捷键 ────────────────────────────────────
+  document.addEventListener('keydown', (e) => {
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || (e.target as HTMLElement).isContentEditable) return;
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+      e.preventDefault();
+      if (undoMgr.canUndo()) { undoMgr.undo(); showToast('撤销 ↩'); }
+    }
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+      e.preventDefault();
+      if (undoMgr.canRedo()) { undoMgr.redo(); showToast('重做 ↪'); }
     }
   });
 

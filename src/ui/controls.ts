@@ -210,7 +210,16 @@ export function initUI(): void {
 
   // 初始化主题图标
   updateThemeIcon(getCurrentTheme());
-  bus.on(Events.THEME_CHANGED, ({ theme }: { theme: ThemeName }) => updateThemeIcon(theme));
+  bus.on(Events.THEME_CHANGED, ({ theme }: { theme: ThemeName }) => {
+    updateThemeIcon(theme);
+    // 预览区背景同步切换：暗色→黑，亮色→白
+    const newBg = theme === 'dark' ? '#000000' : '#ffffff';
+    state.bgColor = newBg;
+    const bgInput = document.getElementById('bgColor') as HTMLInputElement;
+    if (bgInput) bgInput.value = newBg;
+    const pb = document.getElementById('previewBg');
+    if (pb) pb.style.backgroundColor = newBg;
+  });
 
   // prettier-ignore
   const $ = (id: string) => document.getElementById(id)!;
@@ -235,7 +244,11 @@ export function initUI(): void {
   const fileInput = $('fileInput') as HTMLInputElement;
   const particleCanvas = $('particleCanvas') as HTMLCanvasElement;
 
-  previewBg.style.backgroundColor = state.bgColor;
+  // 预览区背景色跟随主题
+  const initBg = getCurrentTheme() === 'dark' ? '#000000' : '#ffffff';
+  state.bgColor = initBg;
+  bgColorInput.value = initBg;
+  previewBg.style.backgroundColor = initBg;
   updateColors();
 
   // ── 上传 ──────────────────────────────────────────────
@@ -401,7 +414,8 @@ export function initUI(): void {
     state.strokeColor = '#ffffff'; state.fillColor = '#ffffff'; state.syncColors = true;
     strokeColorInput.value = '#ffffff'; fillColorInput.value = '#ffffff';
     (document.getElementById('syncColors') as HTMLInputElement).checked = true;
-    state.bgColor = '#000000'; bgColorInput.value = '#000000'; previewBg.style.backgroundColor = '#000000';
+    const resetBg = getCurrentTheme() === 'dark' ? '#000000' : '#ffffff';
+    state.bgColor = resetBg; bgColorInput.value = resetBg; previewBg.style.backgroundColor = resetBg;
     state.speedFactor = 1; speedSlider.value = '1'; speedVal.textContent = '1×';
     state.autoBgEnabled = true; autoBgCheckPanel.checked = true;
     state.preserveOriginalColors = false; preserveColorsCheckbox.checked = false;

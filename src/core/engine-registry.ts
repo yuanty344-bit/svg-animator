@@ -3,7 +3,10 @@
  *
  * 所有引擎实现 AnimationEngine 接口 → registerEngine() → switchEngine(id) 切换。
  * 加新动画类型只需实现接口 + 注册，不动 animator.ts。
+ * 切换引擎时自动发射 ENGINE_SWITCHED 事件。
  */
+
+import { bus, Events } from './events.js';
 
 export interface AnimationEngine {
   id: string;
@@ -27,12 +30,14 @@ export function registerEngine(e: AnimationEngine): void {
 }
 
 export function switchEngine(id: string): void {
-  const old = engines.get(activeId);
+  const from = activeId;
+  const old = engines.get(from);
   if (old) old.destroy();
   const next = engines.get(id);
   if (next) {
     activeId = id;
     next.init();
+    bus.emit(Events.ENGINE_SWITCHED, { from, to: id });
   }
 }
 

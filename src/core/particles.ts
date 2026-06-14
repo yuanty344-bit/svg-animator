@@ -4,10 +4,17 @@
  * - 粒子在预览区内部随机散布，向 target 飞行
  * - 完全跟随 time 参数（可以是 currentProgress 或独立时钟）
  * - 每周期自动重设粒子起点
+ *
+ * 通过事件总线监听：
+ *   ENGINE_SWITCHED → 自动 init/destroy
+ *   COLOR_CHANGED   → 粒子重新采样颜色
+ *   MODE_CHANGED    → 粒子重新分布
+ *   TIMELINE_SEEK   → 渲染当前帧
  */
 import { state, totalCycle, elementCycle } from '../state/store.js';
 import { getLength } from './renderer.js';
 import type { AnimationEngine } from './engine-registry.js';
+import { bus, Events } from './events.js';
 
 let groups: { particles: { tx:number; ty:number; sx:number; sy:number; col:string; sz:number; dr:number }[] }[] = [];
 let initialized = false;
@@ -141,3 +148,26 @@ export const particleEngine: AnimationEngine = {
     destroyParticles();
   },
 };
+
+// ── 事件监听（模块加载时自动注册）────────────────────────────
+
+// 颜色 / 模式变更 → 粒子重新初始化（如果当前是粒子模式）
+function reinitParticlesIfActive(): void {
+  if (state.particleMode && state.currentData) {
+    initParticles();
+    // 尝试渲染到当前 canvas
+    const cvs = document.getElementById('particleCanvas') as HTMLCanvasElement | null;
+    if (cvs && cvs.style.display !== 'none') renderParticles(cvs);
+  }
+}
+
+bus.on(Events.COLOR_CHANGED, reinitParticlesIfActive);
+bus.on(Events.MODE_CHANGED, reinitParticlesIfActive);
+bus.on(Events.BG_COLOR_CHANGED, reinitParticlesIfActive);
+
+// 时间轴拖动 → 粒子渲染
+bus.on(Events.TIMELINE_SEEK, () => {
+  if (!state.particleMode) return;
+  const cvs = document.getElementById('particleCanvas') as HTMLCanvasElement | null;
+  if (cvs && cvs.style.display !== 'none') renderParticles(cvs);
+});

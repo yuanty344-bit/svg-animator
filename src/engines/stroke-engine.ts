@@ -2,11 +2,13 @@
  * Stroke 描边动画引擎
  *
  * 实现 AnimationEngine 接口，负责 stroke-dasharray 描边绘制 + fill 淡入。
+ * 包含 updateColors()（颜色同步 + 重新渲染），通过事件总线与其他模块通信。
  */
 import type { AnimationEngine } from '../core/engine-registry.js';
 import { state, CONST, totalCycle, elementCycle, perElemStrokeDur } from '../state/store.js';
 import { rebuildPreviewDOM, getLength } from '../core/renderer.js';
 import { hexToRgb, applyEasing } from '../utils/helpers.js';
+import { bus, Events } from '../core/events.js';
 
 export function invalidateFillCache(): void { state.cachedFillRgb = null; state.cachedFillHex = ''; }
 
@@ -81,6 +83,58 @@ export function updateElements(progress: number): void {
   }
 }
 
+// ── updateColors — 颜色同步 & 重新渲染 ──────────────────────
+
+export function updateColors(): void {
+  const fillColorInput = document.getElementById('fillColor') as HTMLInputElement;
+  if (state.syncColors) {
+    state.fillColor = state.strokeColor;
+    if (fillColorInput) fillColorInput.value = state.strokeColor;
+    if (fillColorInput) fillColorInput.disabled = true;
+  } else {
+    if (fillColorInput) fillColorInput.disabled = false;
+    if (fillColorInput) state.fillColor = fillColorInput.value;
+  }
+  invalidateFillCache();
+  state.strokeElements.forEach((el) => (el.style.stroke = state.strokeColor));
+  if (state.strokeElements.length) updateElements(state.currentProgress);
+}
+
+// ── 事件监听 ──────────────────────────────────────────────
+
+// 颜色变更 → 重新渲染描边/填充
+bus.on(Events.COLOR_CHANGED, () => {
+  updateColors();
+});
+
+// 模式变更 → 更新当前帧渲染
+bus.on(Events.MODE_CHANGED, () => {
+  if (state.strokeElements.length) updateElements(state.currentProgress);
+});
+
+// 时间轴拖动 → 更新渲染
+bus.on(Events.TIMELINE_SEEK, ({ progress }: { progress: number }) => {
+  if (state.strokeElements.length) updateElements(progress);
+});
+
+// 描边宽度变更
+bus.on(Events.STROKE_WIDTH_CHANGED, ({ width }: { width: number }) => {
+  state.strokeElements.forEach((el) => (el.style.strokeWidth = String(width)));
+});
+
+// 图层可见性 / 颜色变更
+bus.on(Events.LAYER_VISIBILITY_CHANGED, () => {
+  if (state.strokeElements.length) updateElements(state.currentProgress);
+});
+bus.on(Events.LAYER_COLOR_CHANGED, () => {
+  if (state.strokeElements.length) updateElements(state.currentProgress);
+});
+bus.on(Events.LAYER_COLORS_RESET, () => {
+  if (state.strokeElements.length) updateElements(state.currentProgress);
+});
+
+// ── 引擎实例 ──────────────────────────────────────────────
+
 export const strokeEngine: AnimationEngine = {
   id: 'stroke',
   name: '描边动画',
@@ -106,6 +160,3 @@ export const strokeEngine: AnimationEngine = {
     // 不清理 strokeElements/fillElements — 粒子引擎需要它们来采样路径
   },
 };
-
-// Import here to avoid circular dependency
-import { updateColors } from '../core/animator.js';

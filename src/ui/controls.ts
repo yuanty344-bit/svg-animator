@@ -8,13 +8,14 @@
 import { state, CONST, totalCycle, elementCycle } from '../state/store.js';
 import { parseSVG } from '../core/parser.js';
 import { rebuildPreviewDOM, reorderDomElements, measureAndCacheLengths } from '../core/renderer.js';
-import { updateColors, resetAnimation, tick, setRenderContext } from '../core/animator.js';
-import { updateElements, invalidateFillCache } from '../engines/stroke-engine.js';
+import { resetAnimation, tick, setRenderContext } from '../core/animator.js';
+import { updateColors, updateElements } from '../engines/stroke-engine.js';
 import { buildCurrentSnapshotSVG, exportHTML, exportSVG, exportImage, exportParticleVideo, showToast } from '../export/exporter.js';
-import { initParticles, renderParticles, destroyParticles, particleEngine } from '../core/particles.js';
+import { initParticles, destroyParticles, particleEngine } from '../core/particles.js';
 import { registerControl, setControlValue, bindAllControls } from '../core/control-registry.js';
 import { registerEngine, switchEngine, getActiveId } from '../core/engine-registry.js';
 import { strokeEngine } from '../engines/stroke-engine.js';
+import { bus, Events } from '../core/events.js';
 
 // 注册引擎
 registerEngine(strokeEngine);
@@ -27,24 +28,24 @@ registerEngine(particleEngine);
 
 function registerAllControls() {
   registerControl({ id: 'strokeColor', type: 'color', label: '描边', title: '描边颜色', group: 'colors', default: '#ffffff',
-    onChange: (v) => { state.strokeColor = v as string; updateColors(); } });
+    onChange: (v) => { state.strokeColor = v as string; bus.emit(Events.COLOR_CHANGED, { type: 'stroke' }); } });
   registerControl({ id: 'fillColor', type: 'color', label: '填色', title: '填色颜色', group: 'colors', default: '#ffffff',
-    onChange: (v) => { state.fillColor = v as string; state.syncColors = false; setControlValue('syncColors', false); updateColors(); } });
+    onChange: (v) => { state.fillColor = v as string; state.syncColors = false; setControlValue('syncColors', false); bus.emit(Events.COLOR_CHANGED, { type: 'fill' }); } });
   registerControl({ id: 'syncColors', type: 'checkbox', label: '同步', title: '填色跟随描边', group: 'colors', default: true,
-    onChange: (v) => { state.syncColors = v as boolean; updateColors(); } });
+    onChange: (v) => { state.syncColors = v as boolean; bus.emit(Events.COLOR_CHANGED, { type: 'sync' }); } });
   registerControl({ id: 'preserveColors', type: 'checkbox', label: '保留原色', title: '恢复SVG原始颜色', group: 'animation', default: false,
-    onChange: (v) => { state.preserveOriginalColors = v as boolean; if (state.currentData) fullRebuild(); } });
+    onChange: (v) => { state.preserveOriginalColors = v as boolean; if (state.currentData) { fullRebuild(); const lp = document.getElementById('layerPanel'); if (lp && lp.style.display === 'flex') renderLayerPathList(); } showToast(v ? '保留原色：开' : '统一颜色：开'); } });
   registerControl({ id: 'sequentialMode', type: 'checkbox', label: '逐条', title: '路径逐条绘制', group: 'animation', default: false,
-    onChange: (v) => { state.sequentialMode = v as boolean; if (state.currentData) fullRebuild(); } });
+    onChange: (v) => { state.sequentialMode = v as boolean; if (state.currentData) fullRebuild(); showToast(v ? '逐条绘制：开' : '同步绘制：开'); } });
   registerControl({ id: 'staggerFactor', type: 'range', label: '间隔', title: '逐条间隔', group: 'animation', min: 0.5, max: 3, step: 0.25, default: 1,
     onChange: (v) => { state.staggerFactor = v as number; if (state.currentData && state.sequentialMode) fullRebuild(); } });
   registerControl({ id: 'particleMode', type: 'checkbox', label: '粒子', title: '粒子从四周飞入聚合', group: 'animation', default: false,
     onChange: (v) => { toggleParticleMode(v as boolean); } });
   registerControl({ id: 'keepStrokes', type: 'checkbox', label: '保留描边', title: '动画结束后保留描边轮廓', group: 'animation', default: true,
-    onChange: (v) => { state.keepStrokes = v as boolean; updateElements(state.currentProgress); } });
+    onChange: (v) => { state.keepStrokes = v as boolean; bus.emit(Events.MODE_CHANGED, { mode: 'keepStrokes', value: v }); } });
   registerControl({ id: 'easing', type: 'select', label: '缓动', title: '动画缓动曲线', group: 'animation', default: 'linear',
     options: [{value:'linear',label:'线性'},{value:'ease-in',label:'缓入'},{value:'ease-out',label:'缓出'},{value:'ease-in-out',label:'缓入缓出'}],
-    onChange: (v) => { state.easing = v as string; updateElements(state.currentProgress); } });
+    onChange: (v) => { state.easing = v as string; bus.emit(Events.MODE_CHANGED, { mode: 'easing', value: v }); } });
 }
 
 // ── 图层面板 ────────────────────────────────────────────
@@ -63,7 +64,7 @@ export function renderLayerPathList(): void {
     cb.addEventListener('change', function () {
       const idx = parseInt(this.dataset.index!);
       state.pathStrokeVisible[idx] = this.checked;
-      updateElements(state.currentProgress);
+      bus.emit(Events.LAYER_VISIBILITY_CHANGED, { index: idx, visible: this.checked });
     });
     div.appendChild(cb);
     // 逐路径颜色选择器：显示当前有效填充色
@@ -78,7 +79,7 @@ export function renderLayerPathList(): void {
     colorInput.style.cssText = 'width:18px;height:18px;border:none;background:transparent;cursor:pointer;padding:0;flex-shrink:0';
     colorInput.addEventListener('input', function () {
       state.customFills[i] = colorInput.value;
-      updateElements(state.currentProgress);
+      bus.emit(Events.LAYER_COLOR_CHANGED, { index: i, color: colorInput.value });
     });
     div.appendChild(colorInput);
 
@@ -118,6 +119,10 @@ function fullRebuild(): void {
   state.paused = false;
   syncPlayIcon();
   resetAnimation();
+  // 通知其他模块 SVG 数据已就绪
+  bus.emit(Events.SVG_LOADED);
+  // 通知引擎模式可能已变更
+  bus.emit(Events.MODE_CHANGED, { mode: 'rebuild' });
 }
 
 // ── 图标同步 ────────────────────────────────────────────
@@ -137,13 +142,8 @@ function scheduleKeyboardResume(): void {
     state.keyboardResumeTimer = null;
     if (state.playDesired && state.paused) {
       state.paused = false;
-      const n = state.strokeElements.length;
-      const cd = state.sequentialMode ? elementCycle(n) : totalCycle();
-      state.animStart =
-        performance.now() - (state.currentProgress * cd) / state.speedFactor * 1000;
-      state.lastTickTime = 0;
       syncPlayIcon();
-      tick();
+      bus.emit(Events.ANIMATION_PLAY);
     }
   }, CONST.KEYBOARD_RESUME_DELAY);
 }
@@ -208,7 +208,6 @@ export function initUI(): void {
   const bgColorInput = $('bgColor') as HTMLInputElement;
   const strokeColorInput = $('strokeColor') as HTMLInputElement;
   const fillColorInput = $('fillColor') as HTMLInputElement;
-  const syncCheckbox = $('syncColors') as HTMLInputElement;
   const preserveColorsCheckbox = $('preserveColors') as HTMLInputElement;
   const sequentialCheckbox = $('sequentialMode') as HTMLInputElement;
   const layerPanel = $('layerPanel');
@@ -247,20 +246,11 @@ export function initUI(): void {
     if (state.rafId) { cancelAnimationFrame(state.rafId); state.rafId = null; }
     state.currentProgress = parseFloat(timelineSlider.value) / 100;
     timeVal.textContent = Math.round(state.currentProgress * 100) + '%';
-    if (state.particleMode) {
-      renderParticles(particleCanvas);
-    } else {
-      updateElements(state.currentProgress);
-    }
+    bus.emit(Events.TIMELINE_SEEK, { progress: state.currentProgress });
   });
   timelineSlider.addEventListener('change', () => {
     if (state.playDesired) {
-      state.paused = false;
-      const n = state.strokeElements.length;
-      const cd = state.sequentialMode ? elementCycle(n) : totalCycle();
-      state.animStart = performance.now() - (state.currentProgress * cd) / state.speedFactor * 1000;
-      state.lastTickTime = 0;
-      tick();
+      bus.emit(Events.TIMELINE_DRAG_END, { progress: state.currentProgress });
     } else {
       state.paused = true;
     }
@@ -270,55 +260,21 @@ export function initUI(): void {
   speedSlider.addEventListener('input', () => {
     state.speedFactor = parseFloat(speedSlider.value);
     speedVal.textContent = state.speedFactor + '×';
-    if (!state.paused) {
-      const n = state.strokeElements.length;
-      const cd = state.sequentialMode ? elementCycle(n) : totalCycle();
-      state.animStart = performance.now() - (state.currentProgress * cd) / state.speedFactor * 1000;
-      state.lastTickTime = 0;
-    }
+    bus.emit(Events.SPEED_CHANGED, { speed: state.speedFactor });
   });
 
   // ── 描边宽 ────────────────────────────────────────────
   strokeWidthInput.addEventListener('input', () => {
     state.strokeWidth = parseFloat(strokeWidthInput.value);
     strokeWidthVal.textContent = String(state.strokeWidth);
-    state.strokeElements.forEach((el) => (el.style.strokeWidth = String(state.strokeWidth)));
+    bus.emit(Events.STROKE_WIDTH_CHANGED, { width: state.strokeWidth });
   });
 
-  // ── 颜色 ──────────────────────────────────────────────
-  strokeColorInput.addEventListener('input', () => { state.strokeColor = strokeColorInput.value; updateColors(); });
-  strokeColorInput.addEventListener('change', () => reinitParticlesIfActive());
-  fillColorInput.addEventListener('input', () => { state.fillColor = fillColorInput.value; state.syncColors = false; syncCheckbox.checked = false; updateColors(); });
-  fillColorInput.addEventListener('change', () => reinitParticlesIfActive());
-  syncCheckbox.addEventListener('change', () => { state.syncColors = syncCheckbox.checked; updateColors(); });
-  preserveColorsCheckbox.addEventListener('change', () => {
-    state.preserveOriginalColors = preserveColorsCheckbox.checked;
-    reinitParticlesIfActive();
-    if (state.currentData) {
-      fullRebuild();
-      if (layerPanel.style.display === 'flex') renderLayerPathList();
-    }
-    showToast(state.preserveOriginalColors ? '保留原色：开' : '统一颜色：开');
-  });
-  sequentialCheckbox.addEventListener('change', () => {
-    state.sequentialMode = sequentialCheckbox.checked;
-    reinitParticlesIfActive();
-    if (state.currentData) fullRebuild();
-    showToast(state.sequentialMode ? '逐条绘制：开' : '同步绘制：开');
-  });
-  const keepStrokesCheckbox = $('keepStrokes') as HTMLInputElement;
-  keepStrokesCheckbox.addEventListener('change', () => {
-    state.keepStrokes = keepStrokesCheckbox.checked;
-    reinitParticlesIfActive();
-    updateElements(state.currentProgress);
-  });
+  // ── 颜色 / 模式 ─────────────────────────────────────────
+  // 核心逻辑已由控件注册中心处理（registerAllControls 中的 onChange）
+  // 粒子模式需要特殊 DOM 处理，保留手动监听
+
   const particleCheckbox = $('particleMode') as HTMLInputElement;
-  const reinitParticlesIfActive = () => {
-    if (state.particleMode && state.currentData) {
-      initParticles();
-      renderParticles(particleCanvas);
-    }
-  };
 
   const startParticleMode = () => {
     const svg = $('previewSvg');
@@ -339,6 +295,7 @@ export function initUI(): void {
     }
     showToast('粒子模式：' + n + ' 个粒子');
     state.paused = false;
+    syncPlayIcon();
     if (!state.rafId) { state.animStart = performance.now(); state.lastTickTime = 0; tick(); }
   };
 
@@ -351,12 +308,6 @@ export function initUI(): void {
       destroyParticles();
       state.particleCount = 0;
     }
-  });
-  const easingSelect = $('easing') as HTMLSelectElement;
-  easingSelect.addEventListener('change', () => {
-    state.easing = easingSelect.value;
-    updateElements(state.currentProgress);
-    reinitParticlesIfActive();
   });
 
   // ── 动画预设 ──────────────────────────────────────────
@@ -372,9 +323,11 @@ export function initUI(): void {
     state.strokeWidth = p.strokeWidth; strokeWidthInput.value = String(p.strokeWidth); strokeWidthVal.textContent = String(p.strokeWidth);
     state.staggerFactor = p.stagger; (staggerSlider as HTMLInputElement).value = String(p.stagger); staggerVal.textContent = p.stagger + '×';
     state.strokeElements.forEach(el => el.style.strokeWidth = String(p.strokeWidth));
-    if (!state.paused) { const now = performance.now(); const cd = state.sequentialMode ? elementCycle(state.strokeElements.length) : totalCycle(); state.animStart = now - (state.currentProgress * cd) / p.speed * 1000; state.lastTickTime = 0; }
     updateElements(state.currentProgress);
-    reinitParticlesIfActive();
+    bus.emit(Events.PRESET_APPLIED, { preset: name });
+    bus.emit(Events.STROKE_WIDTH_CHANGED, { width: p.strokeWidth });
+    bus.emit(Events.SPEED_CHANGED, { speed: p.speed });
+    bus.emit(Events.MODE_CHANGED, { mode: 'stagger', value: p.stagger });
     showToast('预设：' + p.label);
   };
   $('presetFast').addEventListener('click', () => applyPreset('fast'));
@@ -386,11 +339,14 @@ export function initUI(): void {
   staggerSlider.addEventListener('input', () => {
     state.staggerFactor = parseFloat(staggerSlider.value);
     staggerVal.textContent = state.staggerFactor + '×';
-    reinitParticlesIfActive();
+    bus.emit(Events.MODE_CHANGED, { mode: 'stagger', value: state.staggerFactor });
     if (state.currentData && state.sequentialMode) fullRebuild();
   });
-  bgColorInput.addEventListener('input', () => { state.bgColor = bgColorInput.value; previewBg.style.backgroundColor = state.bgColor; });
-  bgColorInput.addEventListener('change', () => reinitParticlesIfActive());
+  bgColorInput.addEventListener('input', () => {
+    state.bgColor = bgColorInput.value;
+    previewBg.style.backgroundColor = state.bgColor;
+    bus.emit(Events.BG_COLOR_CHANGED, { color: state.bgColor });
+  });
 
   // ── 播放/暂停 ─────────────────────────────────────────
   $('playPauseBtn').addEventListener('click', () => {
@@ -398,17 +354,12 @@ export function initUI(): void {
     state.playDesired = !state.playDesired;
     if (state.playDesired) {
       state.paused = false;
-      const n = state.strokeElements.length;
-      const cd = state.sequentialMode ? elementCycle(n) : totalCycle();
-      state.animStart = performance.now() - (state.currentProgress * cd) / state.speedFactor * 1000;
-      state.lastTickTime = 0;
       syncPlayIcon();
-      tick();
+      bus.emit(Events.ANIMATION_PLAY);
     } else {
       state.paused = true;
-      if (state.rafId) cancelAnimationFrame(state.rafId);
-      state.rafId = null;
       syncPlayIcon();
+      bus.emit(Events.ANIMATION_PAUSE);
     }
   });
 
@@ -430,21 +381,25 @@ export function initUI(): void {
   $('resetBtn').addEventListener('click', () => {
     if (!state.currentData) return;
     state.strokeWidth = 8; strokeWidthInput.value = '8'; strokeWidthVal.textContent = '8';
-    state.strokeColor = '#ffffff'; state.fillColor = '#ffffff'; state.syncColors = true; syncCheckbox.checked = true;
+    state.strokeColor = '#ffffff'; state.fillColor = '#ffffff'; state.syncColors = true;
     strokeColorInput.value = '#ffffff'; fillColorInput.value = '#ffffff';
+    (document.getElementById('syncColors') as HTMLInputElement).checked = true;
     state.bgColor = '#000000'; bgColorInput.value = '#000000'; previewBg.style.backgroundColor = '#000000';
     state.speedFactor = 1; speedSlider.value = '1'; speedVal.textContent = '1×';
     state.autoBgEnabled = true; autoBgCheckPanel.checked = true;
     state.preserveOriginalColors = false; preserveColorsCheckbox.checked = false;
     state.sequentialMode = false; sequentialCheckbox.checked = false;
     state.staggerFactor = 1; staggerSlider.value = '1'; staggerVal.textContent = '1×';
-    state.keepStrokes = true; keepStrokesCheckbox.checked = true;
-    state.easing = 'linear'; easingSelect.value = 'linear';
+    state.keepStrokes = true;
+    (document.getElementById('keepStrokes') as HTMLInputElement).checked = true;
+    state.easing = 'linear';
+    (document.getElementById('easing') as HTMLSelectElement).value = 'linear';
     fullRebuild();
     state.customFills = state.originalFills.map(() => null);
     if (layerPanel.style.display === 'flex') renderLayerPathList();
     fileInput.value = '';
     if (state.keyboardResumeTimer) { clearTimeout(state.keyboardResumeTimer); state.keyboardResumeTimer = null; }
+    bus.emit(Events.ANIMATION_RESET);
   });
 
   // ── 图层面板 ──────────────────────────────────────────
@@ -463,7 +418,7 @@ export function initUI(): void {
   const resetPathColorsBtn = document.getElementById('resetPathColors')!;
   resetPathColorsBtn.addEventListener('click', () => {
     state.customFills = state.originalFills.map(() => null);
-    updateElements(state.currentProgress);
+    bus.emit(Events.LAYER_COLORS_RESET);
     renderLayerPathList();
     showToast('路径颜色已重置');
   });
@@ -478,6 +433,7 @@ export function initUI(): void {
     state.pathStrokeVisible = state.currentData!.elements.map(() => true);
     state.autoBgEnabled = newAutoBg;
     updateElements(state.currentProgress);
+    bus.emit(Events.LAYER_COLORS_RESET);
     renderLayerPathList();
   });
 
@@ -521,7 +477,7 @@ export function initUI(): void {
       timelineSlider.value = String(newVal);
       state.currentProgress = newVal / 100;
       timeVal.textContent = Math.round(newVal) + '%';
-      updateElements(state.currentProgress);
+      bus.emit(Events.TIMELINE_SEEK, { progress: state.currentProgress });
       if (state.keyboardResumeTimer) scheduleKeyboardResume();
     }
   });

@@ -465,8 +465,7 @@ export function initUI(): void {
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
       e.preventDefault();
       if (!state.paused) {
-        state.paused = true;
-        if (state.rafId) { cancelAnimationFrame(state.rafId); state.rafId = null; }
+        bus.emit(Events.ANIMATION_PAUSE);
         syncPlayIcon();
         scheduleKeyboardResume();
       }

@@ -8,7 +8,7 @@
 import { state, CONST, totalCycle, elementCycle } from '../state/store.js';
 import { parseSVG } from '../core/parser.js';
 import { rebuildPreviewDOM, reorderDomElements, measureAndCacheLengths } from '../core/renderer.js';
-import { updateColors, resetAnimation, tick } from '../core/animator.js';
+import { updateColors, resetAnimation, tick, setRenderContext } from '../core/animator.js';
 import { updateElements, invalidateFillCache } from '../engines/stroke-engine.js';
 import { buildCurrentSnapshotSVG, exportHTML, exportSVG, exportImage, exportParticleVideo, showToast } from '../export/exporter.js';
 import { initParticles, renderParticles, destroyParticles, particleEngine } from '../core/particles.js';
@@ -164,6 +164,7 @@ function toggleParticleMode(on: boolean) {
     svg.style.display = 'none'; cvs.style.display = 'block';
     const rect = document.getElementById('previewBg')!.getBoundingClientRect();
     cvs.width = Math.round(rect.width); cvs.height = Math.round(rect.height);
+    setRenderContext({ canvas: cvs });
     initParticles();
     const n = getParticleCount();
     state.particleCount = n;
@@ -178,6 +179,7 @@ function toggleParticleMode(on: boolean) {
     if (!state.rafId) { state.animStart = performance.now(); state.lastTickTime = 0; tick(); }
   } else {
     switchEngine('stroke');
+    setRenderContext({});
     svg.style.display = 'block'; cvs.style.display = 'none';
     destroyParticles();
     state.particleCount = 0;

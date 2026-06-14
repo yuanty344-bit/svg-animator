@@ -8,8 +8,12 @@
  */
 
 import { state, CONST, totalCycle, elementCycle } from '../state/store.js';
-import { getActiveEngine } from './engine-registry.js';
+import { getActiveEngine, type RenderContext } from './engine-registry.js';
 import { updateElements, invalidateFillCache } from '../engines/stroke-engine.js';
+
+let renderCtx: RenderContext = {};
+
+export function setRenderContext(ctx: RenderContext) { renderCtx = ctx; }
 
 export function updateColors(): void {
   const fillColorInput = document.getElementById('fillColor') as HTMLInputElement;
@@ -60,7 +64,7 @@ export function tick(): void {
   const engine = getActiveEngine();
   if (engine) {
     engine.tick(progress);
-    engine.render();
+    engine.render(renderCtx);
   }
 
   const timelineSlider = document.getElementById('timeline') as HTMLInputElement;

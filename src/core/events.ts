@@ -107,6 +107,9 @@ export const Events = {
   // 预设
   PRESET_APPLIED: 'preset:applied',
 
+  // 主题
+  THEME_CHANGED: 'theme:changed',
+
   // 导出
   EXPORT_REQUESTED: 'export:requested',
 } as const;

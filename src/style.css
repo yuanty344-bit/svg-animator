@@ -1,61 +1,147 @@
+/* ═══════════════════════════════════════════════════════════
+   CSS 自定义属性 + 主题系统
+
+   切换主题: <html data-theme="dark|light">
+   新增主题: 在 [data-theme="xxx"] 块中覆盖变量即可
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── 基础色 (RGB 分量, 用于 rgba() 拼装) ── */
+  --text-rgb: 255, 255, 255;
+  --bg-rgb: 0, 0, 0;
+
+  /* ── 语义色 ── */
+  --app-bg: rgb(var(--bg-rgb));
+  --text-color: rgb(var(--text-rgb));
+  --accent: rgb(var(--text-rgb));
+
+  /* ── UI 背景 (基于文字色透明度) ── */
+  --ui-bg-02: rgba(var(--text-rgb), 0.02);
+  --ui-bg-03: rgba(var(--text-rgb), 0.03);
+  --ui-bg-04: rgba(var(--text-rgb), 0.04);
+  --ui-bg-05: rgba(var(--text-rgb), 0.05);
+  --ui-bg-06: rgba(var(--text-rgb), 0.06);
+  --ui-bg-08: rgba(var(--text-rgb), 0.08);
+  --ui-bg-12: rgba(var(--text-rgb), 0.12);
+  --ui-bg-14: rgba(var(--text-rgb), 0.14);
+  --ui-bg-15: rgba(var(--text-rgb), 0.15);
+
+  /* ── UI 边框 ── */
+  --ui-border-08: rgba(var(--text-rgb), 0.08);
+  --ui-border-10: rgba(var(--text-rgb), 0.1);
+  --ui-border-12: rgba(var(--text-rgb), 0.12);
+  --ui-border-15: rgba(var(--text-rgb), 0.15);
+  --ui-border-20: rgba(var(--text-rgb), 0.2);
+  --ui-border-25: rgba(var(--text-rgb), 0.25);
+  --ui-border-30: rgba(var(--text-rgb), 0.3);
+  --ui-border-40: rgba(var(--text-rgb), 0.4);
+
+  /* ── 面板 ── */
+  --panel-bg: rgba(20, 20, 20, 0.95);
+  --select-option-bg: #111;
+  --panel-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+
+  /* ── 棋盘格 ── */
+  --checker-color: rgba(var(--text-rgb), 0.04);
+}
+
+/* ── 亮色主题 ──────────────────────────────────────────── */
+
+[data-theme="light"] {
+  --text-rgb: 0, 0, 0;
+  --bg-rgb: 248, 248, 248;
+  --panel-bg: rgba(255, 255, 255, 0.95);
+  --select-option-bg: #eee;
+  --panel-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   全局样式
+   ═══════════════════════════════════════════════════════════ */
+
 *{margin:0;padding:0;box-sizing:border-box}
 body{
   width:100vw;height:100vh;
-  background:#000;color:#fff;font-family:system-ui,sans-serif;
+  background:var(--app-bg);color:var(--text-color);
+  font-family:system-ui,sans-serif;
   display:flex;flex-direction:column;overflow:hidden;
 }
+
 .preview-area{
   flex:1;display:flex;align-items:center;justify-content:center;
   position:relative;min-height:0;
 }
+
 .preview-bg{
   width:min(80vw,80vh,600px);height:min(80vw,80vh,600px);
   border-radius:20px;overflow:hidden;
   background-color:var(--bg-color,#000);
-  background-image:linear-gradient(45deg,rgba(255,255,255,.04) 25%,transparent 25%,transparent 75%,rgba(255,255,255,.04) 75%),
-  linear-gradient(45deg,rgba(255,255,255,.04) 25%,transparent 25%,transparent 75%,rgba(255,255,255,.04) 75%);
+  background-image:
+    linear-gradient(45deg, var(--checker-color) 25%, transparent 25%, transparent 75%, var(--checker-color) 75%),
+    linear-gradient(45deg, var(--checker-color) 25%, transparent 25%, transparent 75%, var(--checker-color) 75%);
   background-size:20px 20px;background-position:0 0,10px 10px;
   transition:background-color .3s;
 }
+
 .preview-bg svg{
   width:100%;height:100%;display:block;
   padding:2%;
   box-sizing:border-box;
 }
+
 .upload-inline{
   display:flex;align-items:center;gap:5px;
-  background:rgba(255,255,255,.08);border-radius:6px;padding:4px 10px;
-  border:1px solid rgba(255,255,255,.12);
+  background:var(--ui-bg-08);
+  border-radius:6px;padding:4px 10px;
+  border:1px solid var(--ui-border-12);
   cursor:pointer;transition:.2s;font-size:11px;opacity:.85;flex-shrink:0;
 }
-.upload-inline:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3);opacity:1}
+.upload-inline:hover{
+  background:var(--ui-bg-14);
+  border-color:var(--ui-border-30);
+  opacity:1;
+}
 .upload-inline svg{width:15px;height:15px;opacity:.7}
 .upload-inline input{display:none}
+
 .preview-bg{position:relative}
-#particleCanvas{position:absolute;top:0;left:0;width:100%;height:100%;display:none;pointer-events:none;border-radius:20px;z-index:1}
-/* 共用控件 */
+
+#particleCanvas{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  display:none;pointer-events:none;border-radius:20px;z-index:1;
+}
+
+/* ── 控件通用 ──────────────────────────────────────────── */
+
 .ctrl-group{display:flex;align-items:center;gap:6px;font-size:12px;opacity:.8}
 .ctrl-group label{opacity:.6;white-space:nowrap;font-size:11px}
+
 input[type=range]{
-  accent-color:#fff;
-  height:3px;background:rgba(255,255,255,.15);
+  accent-color:var(--accent);
+  height:3px;background:var(--ui-bg-15);
   border-radius:2px;-webkit-appearance:none;appearance:none;outline:none;
 }
 input[type=range]::-webkit-slider-thumb{
-  appearance:none;width:14px;height:14px;background:#fff;border-radius:50%;cursor:pointer;
+  appearance:none;width:14px;height:14px;
+  background:var(--accent);border-radius:50%;cursor:pointer;
 }
+
 .ctrl-group .val{min-width:30px;text-align:center;opacity:.7;font-size:11px}
+
 input[type=color]{
   width:22px;height:22px;border:none;background:transparent;cursor:pointer;
   padding:0;border-radius:4px;
 }
 input[type=color]::-webkit-color-swatch-wrapper{padding:0}
-input[type=color]::-webkit-color-swatch{border-radius:3px;border:1px solid rgba(255,255,255,.2)}
+input[type=color]::-webkit-color-swatch{
+  border-radius:3px;border:1px solid var(--ui-border-20);
+}
 
-/* 顶部栏 */
+/* ── 顶部栏 ────────────────────────────────────────────── */
+
 .top-bar{
-  border-bottom:1px solid rgba(255,255,255,.08);
-  background:rgba(255,255,255,.02);
+  border-bottom:1px solid var(--ui-border-08);
+  background:var(--ui-bg-02);
   padding:5px 14px;
 }
 .top-bar .bar-row{
@@ -67,113 +153,200 @@ input[type=color]::-webkit-color-swatch{border-radius:3px;border:1px solid rgba(
 .top-bar .icon-btn svg{width:14px;height:14px}
 .icon-label{font-size:10px;opacity:.7;white-space:nowrap}
 .top-bar .export-select{padding:4px 10px;font-size:11px}
-.easing-select{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:6px;color:#fff;font-size:10px;padding:3px 6px;cursor:pointer;outline:none}
-.easing-select:hover{background:rgba(255,255,255,.12)}
-.easing-select option{background:#111;color:#fff}
+
+.easing-select{
+  background:var(--ui-bg-06);
+  border:1px solid var(--ui-border-12);
+  border-radius:6px;color:var(--text-color);font-size:10px;
+  padding:3px 6px;cursor:pointer;outline:none;
+}
+.easing-select:hover{background:var(--ui-bg-12)}
+.easing-select option{background:var(--select-option-bg);color:var(--text-color)}
+
 .top-bar .text-btn{padding:5px 12px;font-size:11px}
+
 .bar-label{font-size:10px;opacity:.5;white-space:nowrap}
-.bar-sep{width:1px;height:16px;background:rgba(255,255,255,.1);flex-shrink:0}
+.bar-sep{
+  width:1px;height:16px;
+  background:var(--ui-border-10);flex-shrink:0;
+}
+
 .mini-btn{
-  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);
-  border-radius:6px;color:#fff;font-size:10px;cursor:pointer;
+  background:var(--ui-bg-05);
+  border:1px solid var(--ui-border-12);
+  border-radius:6px;color:var(--text-color);font-size:10px;cursor:pointer;
   padding:4px 8px;white-space:nowrap;transition:.2s;
   display:flex;align-items:center;gap:3px;
 }
-.mini-btn:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.3)}
+.mini-btn:hover{
+  background:var(--ui-bg-12);
+  border-color:var(--ui-border-30);
+}
 .mini-btn svg{width:13px;height:13px;flex-shrink:0}
+
 .val{
   display:inline-block;min-width:32px;text-align:center;
   font-size:11px;opacity:.7;flex-shrink:0;
 }
 
-/* 底部栏 */
+/* ── 底部栏 ────────────────────────────────────────────── */
+
 .bottom-bar{
-  border-top:1px solid rgba(255,255,255,.1);
-  background:rgba(255,255,255,.03);
+  border-top:1px solid var(--ui-border-10);
+  background:var(--ui-bg-03);
   padding:6px 14px;
   display:flex;align-items:center;gap:14px;
 }
 .bottom-bar .icon-btn{width:34px;height:34px;flex-shrink:0}
+
 .timeline-wrap{
   flex:1;display:flex;align-items:center;gap:6px;
   min-width:100px;
 }
 .timeline-wrap input[type=range]{flex:1}
 .timeline-wrap .val{min-width:36px}
-.sync-inline{display:flex;align-items:center;gap:4px;font-size:11px;opacity:.6;cursor:pointer}
-.sync-inline input{accent-color:#fff;margin:0}
-.btn-row{display:flex;gap:8px;align-items:center}
-.icon-btn{
-  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);
-  border-radius:10px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;
-  cursor:pointer;transition:.3s;color:#fff;
+
+/* ── 通用按钮/输入 ──────────────────────────────────────── */
+
+.sync-inline{
+  display:flex;align-items:center;gap:4px;font-size:11px;
+  opacity:.6;cursor:pointer;
 }
-.icon-btn:hover{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.4)}
+.sync-inline input{accent-color:var(--accent);margin:0}
+
+.btn-row{display:flex;gap:8px;align-items:center}
+
+.icon-btn{
+  background:var(--ui-bg-06);
+  border:1px solid var(--ui-border-15);
+  border-radius:10px;width:36px;height:36px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:.3s;color:var(--text-color);
+}
+.icon-btn:hover{
+  background:var(--ui-bg-15);
+  border-color:var(--ui-border-40);
+}
 .icon-btn svg{width:18px;height:18px}
+
 .text-btn{
-  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.2);
-  border-radius:18px;padding:8px 16px;color:#fff;font-size:12px;cursor:pointer;
+  background:var(--ui-bg-06);
+  border:1px solid var(--ui-border-20);
+  border-radius:18px;padding:8px 16px;
+  color:var(--text-color);font-size:12px;cursor:pointer;
   transition:.3s;letter-spacing:.03em;white-space:nowrap;
 }
-.text-btn:hover{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.4)}
+.text-btn:hover{
+  background:var(--ui-bg-15);
+  border-color:var(--ui-border-40);
+}
+
 .export-select{
-  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.2);
-  border-radius:18px;padding:6px 12px;color:#fff;font-size:12px;cursor:pointer;
+  background:var(--ui-bg-06);
+  border:1px solid var(--ui-border-20);
+  border-radius:18px;padding:6px 12px;
+  color:var(--text-color);font-size:12px;cursor:pointer;
   outline:none;letter-spacing:.03em;transition:.3s;
 }
-.export-select:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.4)}
-.export-select option{background:#111;color:#fff}
+.export-select:hover{
+  background:var(--ui-bg-12);
+  border-color:var(--ui-border-40);
+}
+.export-select option{background:var(--select-option-bg);color:var(--text-color)}
 
-/* 可拖动图层面板 */
+/* ── 可拖动图层面板 ────────────────────────────────────── */
+
 .layer-panel{
   position:fixed;top:100px;left:100px;z-index:30;
-  background:rgba(20,20,20,.95);border:1px solid rgba(255,255,255,.25);
+  background:var(--panel-bg);
+  border:1px solid var(--ui-border-25);
   border-radius:14px;width:260px;max-height:360px;
   display:none;flex-direction:column;
-  backdrop-filter:blur(16px);box-shadow:0 8px 32px rgba(0,0,0,.6);
+  backdrop-filter:blur(16px);
+  box-shadow:var(--panel-shadow);
 }
+
 .layer-header{
   padding:10px 14px;cursor:move;
-  border-bottom:1px solid rgba(255,255,255,.1);
+  border-bottom:1px solid var(--ui-border-10);
   display:flex;align-items:center;justify-content:space-between;
   font-size:13px;opacity:.8;
 }
+
 .layer-close{
   cursor:pointer;opacity:.6;font-size:18px;line-height:1;
-  background:transparent;border:none;color:#fff;
+  background:transparent;border:none;color:var(--text-color);
 }
 .layer-close:hover{opacity:1}
+
 .layer-body{padding:14px 14px 8px;overflow-y:auto;flex:1}
 .layer-footer{padding:0 14px 10px;flex-shrink:0}
+
 .auto-bg-toggle{
-  display:flex;align-items:center;gap:8px;font-size:12px;opacity:.9;margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;font-size:12px;
+  opacity:.9;margin-bottom:12px;
 }
-.auto-bg-toggle input{accent-color:#fff;width:14px;height:14px}
+.auto-bg-toggle input{accent-color:var(--accent);width:14px;height:14px}
+
 .path-list{display:flex;flex-direction:column;gap:6px}
 .path-item{display:flex;align-items:center;gap:8px;font-size:12px;opacity:.8}
-.path-item input{accent-color:#fff;width:14px;height:14px}
-.path-item .fill-dot{width:10px;height:10px;border-radius:50%;border:1px solid rgba(255,255,255,.3);flex-shrink:0}
+.path-item input{accent-color:var(--accent);width:14px;height:14px}
+.path-item .fill-dot{
+  width:10px;height:10px;border-radius:50%;
+  border:1px solid var(--ui-border-30);flex-shrink:0;
+}
+
+/* ── Toast ─────────────────────────────────────────────── */
 
 .toast{
-  position:fixed;bottom:40px;left:50%;transform:translateX(-50%) translateY(20px);
-  background:rgba(255,255,255,.15);backdrop-filter:blur(10px);
-  border:1px solid rgba(255,255,255,.25);border-radius:24px;
+  position:fixed;bottom:40px;left:50%;
+  transform:translateX(-50%) translateY(20px);
+  background:var(--ui-bg-15);
+  backdrop-filter:blur(10px);
+  border:1px solid var(--ui-border-25);
+  border-radius:24px;
   padding:8px 24px;font-size:13px;letter-spacing:.04em;
   opacity:0;transition:all .3s ease;pointer-events:none;z-index:20;
 }
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── 粘贴面板 ──────────────────────────────────────────── */
+
 .paste-panel{
   position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-  background:rgba(20,20,20,.95);border:1px solid rgba(255,255,255,.2);
+  background:var(--panel-bg);
+  border:1px solid var(--ui-border-20);
   border-radius:14px;padding:14px;display:none;z-index:25;
-  backdrop-filter:blur(12px);flex-direction:column;gap:10px;width:360px;max-width:90vw;
+  backdrop-filter:blur(12px);flex-direction:column;gap:10px;
+  width:360px;max-width:90vw;
 }
 .paste-panel textarea{
-  width:100%;height:120px;background:rgba(255,255,255,.05);color:#fff;
-  border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:8px;font-size:12px;
+  width:100%;height:120px;
+  background:var(--ui-bg-05);
+  color:var(--text-color);
+  border:1px solid var(--ui-border-20);
+  border-radius:8px;padding:8px;font-size:12px;
   resize:vertical;outline:none;
 }
 .paste-panel .row{display:flex;gap:8px;justify-content:flex-end}
+
+/* ── 主题切换按钮 ──────────────────────────────────────── */
+
+.theme-toggle{
+  background:var(--ui-bg-06);
+  border:1px solid var(--ui-border-15);
+  border-radius:8px;width:28px;height:26px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:.3s;color:var(--text-color);
+  font-size:14px;padding:0;flex-shrink:0;
+}
+.theme-toggle:hover{
+  background:var(--ui-bg-15);
+  border-color:var(--ui-border-40);
+}
+
+/* ── 响应式 ────────────────────────────────────────────── */
+
 @media(max-width:768px){
   .top-bar{padding:4px 6px}
   .top-bar .bar-row{gap:5px;font-size:10px}

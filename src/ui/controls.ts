@@ -16,6 +16,7 @@ import { registerControl, setControlValue, bindAllControls } from '../core/contr
 import { registerEngine, switchEngine, getActiveId } from '../core/engine-registry.js';
 import { strokeEngine } from '../engines/stroke-engine.js';
 import { bus, Events } from '../core/events.js';
+import { toggleTheme, getCurrentTheme, type ThemeName } from '../core/themes.js';
 
 // 注册引擎
 registerEngine(strokeEngine);
@@ -46,6 +47,8 @@ function registerAllControls() {
   registerControl({ id: 'easing', type: 'select', label: '缓动', title: '动画缓动曲线', group: 'animation', default: 'linear',
     options: [{value:'linear',label:'线性'},{value:'ease-in',label:'缓入'},{value:'ease-out',label:'缓出'},{value:'ease-in-out',label:'缓入缓出'}],
     onChange: (v) => { state.easing = v as string; bus.emit(Events.MODE_CHANGED, { mode: 'easing', value: v }); } });
+  registerControl({ id: 'themeToggle', type: 'button', label: '主题', title: '切换亮色/暗色主题', group: 'ui', default: 'dark',
+    onChange: () => { const next = toggleTheme(); updateThemeIcon(next); } });
 }
 
 // ── 图层面板 ────────────────────────────────────────────
@@ -134,6 +137,13 @@ function syncPlayIcon(): void {
     : '<rect x="5" y="4" width="5" height="16" rx="1"/><rect x="14" y="4" width="5" height="16" rx="1"/>';
 }
 
+// ── 主题图标 ────────────────────────────────────────────
+
+function updateThemeIcon(name: ThemeName): void {
+  const btn = document.getElementById('themeToggle');
+  if (btn) btn.textContent = name === 'dark' ? '☀' : '🌙';
+}
+
 // ── 键盘恢复 ────────────────────────────────────────────
 
 function scheduleKeyboardResume(): void {
@@ -194,6 +204,10 @@ export function initUI(): void {
   // 注册所有控件 → 自动绑定事件
   registerAllControls();
   bindAllControls();
+
+  // 初始化主题图标
+  updateThemeIcon(getCurrentTheme());
+  bus.on(Events.THEME_CHANGED, ({ theme }: { theme: ThemeName }) => updateThemeIcon(theme));
 
   // prettier-ignore
   const $ = (id: string) => document.getElementById(id)!;

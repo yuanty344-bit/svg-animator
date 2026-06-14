@@ -103,9 +103,7 @@ export const strokeEngine: AnimationEngine = {
   },
 
   destroy() {
-    state.strokeElements = [];
-    state.fillElements = [];
-    state.originalFills = [];
+    // 不清理 strokeElements/fillElements — 粒子引擎需要它们来采样路径
   },
 };
 
